@@ -11,9 +11,9 @@ object SettingsManager {
     private const val KEY_ICON_PADDING = "icon_padding"
     
     // Default values
-    const val DEFAULT_HEX_RADIUS = 80f
+    const val DEFAULT_HEX_RADIUS = 96f
     const val DEFAULT_ICON_SIZE_MULTIPLIER = 1.0f
-    const val DEFAULT_ICON_PADDING = 4f
+    const val DEFAULT_ICON_PADDING = 12f
     
     // Min/Max ranges
     const val MIN_HEX_RADIUS = 50f

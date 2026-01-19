@@ -1,11 +1,13 @@
 package com.hexy.launcher.ui
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.view.animation.OvershootInterpolator
 import com.hexy.launcher.data.AppInfo
 import com.hexy.launcher.domain.HexCoordinate
 import com.hexy.launcher.domain.HexGridCalculator
@@ -27,10 +29,23 @@ class HexagonalGridView @JvmOverloads constructor(
     
     private var offsetX = 0f
     private var offsetY = 0f
+
+    fun scrollToOrigin() {
+        offsetX = 0f
+        offsetY = 0f
+        invalidate()
+    }
     
+    // Pre-computed hex path for performance
     private val hexPath = Path()
     private val hexPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        isFilterBitmap = true
+    }
+    
+    // Animation state
+    private var animationProgress = 1f
+    private var animator: ValueAnimator? = null
     
     private var onAppClickListener: ((AppInfo) -> Unit)? = null
     private var onAppLongClickListener: ((AppInfo, Float, Float) -> Unit)? = null
@@ -38,9 +53,26 @@ class HexagonalGridView @JvmOverloads constructor(
     private val gestureDetector = GestureDetector(context, GestureListener())
     
     init {
+        // Enable hardware acceleration for better performance
+        setLayerType(LAYER_TYPE_HARDWARE, null)
         loadSettings()
         // Pre-generate hex positions (enough for ~200 apps)
         hexPositions = calculator.generateSpiralCoordinates(10)
+        precomputeHexPath()
+    }
+    
+    private fun precomputeHexPath() {
+        hexPath.reset()
+        // Create a unit hexagon path centered at origin
+        // Using pointy-top orientation: first vertex at top
+        for (i in 0 until 6) {
+            val angle = Math.toRadians((60.0 * i - 30.0)).toFloat()
+            val x = hexRadius * cos(angle)
+            val y = hexRadius * sin(angle)
+            if (i == 0) hexPath.moveTo(x, y)
+            else hexPath.lineTo(x, y)
+        }
+        hexPath.close()
     }
     
     private fun loadSettings() {
@@ -48,6 +80,7 @@ class HexagonalGridView @JvmOverloads constructor(
         iconSizeMultiplier = com.hexy.launcher.util.SettingsManager.getIconSizeMultiplier(context)
         iconPadding = com.hexy.launcher.util.SettingsManager.getIconPadding(context)
         calculator = HexGridCalculator(hexRadius)
+        precomputeHexPath()
     }
     
     fun refreshSettings() {
@@ -58,7 +91,21 @@ class HexagonalGridView @JvmOverloads constructor(
     
     fun setApps(appList: List<AppInfo>) {
         apps = appList
-        invalidate()
+        // Start radial expansion animation
+        startRadialAnimation()
+    }
+    
+    private fun startRadialAnimation() {
+        animator?.cancel()
+        animator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 400
+            interpolator = OvershootInterpolator(1.2f)
+            addUpdateListener { anim ->
+                animationProgress = anim.animatedValue as Float
+                invalidate()
+            }
+            start()
+        }
     }
     
     fun setOnAppClick(listener: (AppInfo) -> Unit) {
@@ -81,30 +128,34 @@ class HexagonalGridView @JvmOverloads constructor(
             val hex = hexPositions[index]
             val pos = calculator.hexToPixel(hex, centerX, centerY)
             
-            // Draw hexagon background
-            drawHexagon(canvas, pos.x, pos.y, app.dominantColor)
+            // Apply radial animation scaling based on ring (only if valid)
+            val ring = hex.ring
+            val ringProgress = ((animationProgress * 10) - ring).coerceIn(0f, 1f)
             
-            // Draw app icon (system icon as-is)
-            drawIcon(canvas, pos.x, pos.y, app)
+            if (ringProgress > 0f) {
+                canvas.save()
+                canvas.translate(pos.x, pos.y)
+                canvas.scale(ringProgress, ringProgress)
+                
+                // Draw hexagon background
+                drawHexagonAtOrigin(canvas, app.dominantColor)
+                
+                // Draw app icon
+                drawIconAtOrigin(canvas, app)
+                
+                canvas.restore()
+            }
         }
     }
     
-    private fun drawHexagon(canvas: Canvas, cx: Float, cy: Float, color: Int) {
-        hexPath.reset()
-        for (i in 0 until 6) {
-            val angle = Math.toRadians((60.0 * i - 30.0)).toFloat()
-            val x = cx + hexRadius * cos(angle)
-            val y = cy + hexRadius * sin(angle)
-            if (i == 0) hexPath.moveTo(x, y)
-            else hexPath.lineTo(x, y)
-        }
-        hexPath.close()
-        
+    private fun drawHexagonAtOrigin(canvas: Canvas, color: Int) {
+        // Fill
         hexPaint.color = color
         hexPaint.alpha = 80
         hexPaint.style = Paint.Style.FILL
         canvas.drawPath(hexPath, hexPaint)
         
+        // Stroke
         hexPaint.color = Color.WHITE
         hexPaint.alpha = 100
         hexPaint.style = Paint.Style.STROKE
@@ -112,15 +163,13 @@ class HexagonalGridView @JvmOverloads constructor(
         canvas.drawPath(hexPath, hexPaint)
     }
     
-    private fun drawIcon(canvas: Canvas, cx: Float, cy: Float, app: AppInfo) {
-        // Use system icon as-is, no hexagonal clipping
+    private fun drawIconAtOrigin(canvas: Canvas, app: AppInfo) {
         // Calculate icon size based on hex radius and user settings
         val baseIconSize = hexRadius * 1.3f
         val iconSize = (baseIconSize * iconSizeMultiplier - iconPadding * 2).toInt()
-        val left = (cx - iconSize / 2).toInt()
-        val top = (cy - iconSize / 2).toInt()
+        val halfSize = iconSize / 2
         
-        app.icon.setBounds(left, top, left + iconSize, top + iconSize)
+        app.icon.setBounds(-halfSize, -halfSize, halfSize, halfSize)
         app.icon.draw(canvas)
     }
     

@@ -4,24 +4,43 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.os.Build
 import com.hexy.launcher.util.ColorExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AppRepository(private val context: Context) {
-    
+
     private val packageManager: PackageManager = context.packageManager
+    private val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as android.content.pm.LauncherApps
     
-    suspend fun loadInstalledApps(): List<AppInfo> = withContext(Dispatchers.IO) {
+    // Memory cache to prevent sluggish reloading
+    private var cachedApps: List<AppInfo>? = null
+
+    suspend fun loadInstalledApps(): List<AppInfo> = withContext(Dispatchers.Default) {
+        val usageStats = UsageTracker.getAllStats(context)
+        
+        // If we have cached apps, just update their usage stats and return
+        cachedApps?.let { cache ->
+            return@withContext cache.map { app ->
+                val key = if (app.isShortcut && app.shortcutId != null) "${app.packageName}_${app.shortcutId}" else app.packageName
+                val stats = usageStats[key]
+                app.copy(
+                    usageCount = stats?.first ?: 0L,
+                    lastUsedTimestamp = stats?.second ?: 0L
+                )
+            }
+        }
+
         val apps = mutableListOf<AppInfo>()
-        val usageStats = UsageStatsHelper.getUsageStats(context)
         
         // 1. Load regular launcher apps
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
         val resolveInfos: List<ResolveInfo> = packageManager.queryIntentActivities(intent, 0)
-        
+        val currentUser = android.os.Process.myUserHandle()
+
         resolveInfos.mapNotNullTo(apps) { ri ->
             try {
                 val packageName = ri.activityInfo.packageName
@@ -29,59 +48,73 @@ class AppRepository(private val context: Context) {
                 val icon = ri.loadIcon(packageManager)
                 val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
                 val stats = usageStats[packageName]
-                
+
                 AppInfo(
                     packageName = packageName,
                     label = label,
                     icon = icon,
                     dominantColor = dominantColor,
                     colorBucket = bucket,
-                    usageCount = stats?.totalTimeInForeground ?: 0L,
-                    lastUsedTimestamp = stats?.lastTimeUsed ?: 0L,
-                    isShortcut = false
+                    usageCount = stats?.first ?: 0L,
+                    lastUsedTimestamp = stats?.second ?: 0L,
+                    isShortcut = false,
+                    userHandle = currentUser
                 )
             } catch (e: Exception) {
                 null
             }
         }
-        
+
         // 2. Load pinned shortcuts (including PWAs)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N_MR1) {
-            val shortcutManager = context.getSystemService(android.content.pm.ShortcutManager::class.java)
-            shortcutManager?.pinnedShortcuts?.mapNotNullTo(apps) { shortcut ->
-                try {
-                    val icon = shortcutManager.getShortcutIconDrawable(shortcut, 0)
-                        ?: context.packageManager.getApplicationIcon(shortcut.`package`)
-                    val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
-                    
-                    AppInfo(
-                        packageName = shortcut.`package`,
-                        label = shortcut.shortLabel?.toString() ?: shortcut.id,
-                        icon = icon,
-                        dominantColor = dominantColor,
-                        colorBucket = bucket,
-                        usageCount = 0L, // Shortcuts don't have usage stats
-                        lastUsedTimestamp = 0L,
-                        isShortcut = true,
-                        shortcutId = shortcut.id
-                    )
-                } catch (e: Exception) {
-                    null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+             try {
+                val query = android.content.pm.LauncherApps.ShortcutQuery()
+                query.setQueryFlags(android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                val shortcuts = launcherApps.getShortcuts(query, currentUser) ?: emptyList()
+
+                shortcuts.mapNotNullTo(apps) { shortcut ->
+                    try {
+                        val icon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi) 
+                            ?: context.packageManager.getApplicationIcon(shortcut.`package`)
+                            
+                        val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
+                        val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
+                        val stats = usageStats[shortcutKey]
+
+                        AppInfo(
+                            packageName = shortcut.`package`,
+                            label = shortcut.shortLabel?.toString() ?: shortcut.id,
+                            icon = icon,
+                            dominantColor = dominantColor,
+                            colorBucket = bucket,
+                            usageCount = stats?.first ?: 0L,
+                            lastUsedTimestamp = stats?.second ?: 0L,
+                            isShortcut = true,
+                            shortcutId = shortcut.id,
+                            userHandle = shortcut.userHandle
+                        )
+                    } catch (e: Exception) {
+                        null
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
         
+        // Update cache
+        cachedApps = apps
         apps
     }
-    
+
     fun launchApp(app: AppInfo, context: Context) {
-        if (app.isShortcut && app.shortcutId != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N_MR1) {
-            val shortcutManager = context.getSystemService(android.content.pm.ShortcutManager::class.java)
-            // For shortcuts, we need the proper activity context
-            if (context is android.app.Activity) {
-                shortcutManager?.startShortcut(app.packageName, app.shortcutId, null, null)
-            } else {
-                // Fallback: use regular launch intent
+        val key = if (app.isShortcut && app.shortcutId != null) "${app.packageName}_${app.shortcutId}" else app.packageName
+        UsageTracker.recordClick(context, key)
+        
+        if (app.isShortcut && app.shortcutId != null && app.userHandle != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            try {
+                launcherApps.startShortcut(app.packageName, app.shortcutId, null, null, app.userHandle)
+            } catch (e: Exception) {
                 val intent = packageManager.getLaunchIntentForPackage(app.packageName)
                 intent?.let { context.startActivity(it) }
             }

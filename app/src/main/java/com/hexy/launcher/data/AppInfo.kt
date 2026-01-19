@@ -11,5 +11,6 @@ data class AppInfo(
     val usageCount: Long,        // From UsageStats
     val lastUsedTimestamp: Long, // For recency sorting
     val isShortcut: Boolean = false,  // True if PWA/shortcut
-    val shortcutId: String? = null    // ShortcutInfo ID if applicable
+    val shortcutId: String? = null,    // ShortcutInfo ID if applicable
+    val userHandle: android.os.UserHandle? = null // User handle for the app/shortcut
 )
