@@ -7,29 +7,19 @@ import kotlin.math.sqrt
  * Converts hex coordinates to screen pixels and vice versa.
  * Uses "pointy-top" orientation (vertex at top).
  * 
- * In a honeycomb grid:
- * - Adjacent hexes in same column are staggered horizontally
- * - This creates the characteristic interlocking pattern
+ * Windmill spiral: starts from RIGHT and goes counterclockwise.
  */
 class HexGridCalculator(
-    private val hexRadius: Float  // Distance from center to vertex
+    private val hexRadius: Float
 ) {
-    // For pointy-top hexagons:
-    // - Width (flat edge to flat edge) = sqrt(3) * hexRadius
-    // - Height (vertex to vertex) = 2 * hexRadius
     private val hexWidth = sqrt(3f) * hexRadius
     private val hexHeight = 2f * hexRadius
     
     /**
      * Convert axial (q, r) to screen pixel (x, y).
-     * Uses POINTY-TOP orientation formula for proper honeycomb tessellation.
-     * 
-     * Key insight: In pointy-top, alternating rows are offset by hexWidth/2
+     * Pointy-top orientation.
      */
     fun hexToPixel(hex: HexCoordinate, centerX: Float, centerY: Float): PointF {
-        // Pointy-top axial to pixel:
-        // x = size * sqrt(3) * (q + r/2)
-        // y = size * 3/2 * r
         val x = hexRadius * sqrt(3f) * (hex.q + hex.r / 2f)
         val y = hexRadius * 3f / 2f * hex.r
         return PointF(centerX + x, centerY + y)
@@ -37,13 +27,11 @@ class HexGridCalculator(
     
     /**
      * Convert screen pixel to nearest hex coordinate.
-     * Uses pointy-top formula.
      */
     fun pixelToHex(px: Float, py: Float, centerX: Float, centerY: Float): HexCoordinate {
         val x = px - centerX
         val y = py - centerY
         
-        // Inverse of pointy-top formula
         val q = (sqrt(3f) / 3f * x - 1f / 3f * y) / hexRadius
         val r = (2f / 3f * y) / hexRadius
         
@@ -51,36 +39,64 @@ class HexGridCalculator(
     }
     
     /**
-     * Generate hex coordinates in spiral order from center.
-     * Ring 0 = center (1 hex)
-     * Ring 1 = 6 hexes around center
-     * Ring N = 6*N hexes
+     * Generate hex coordinates in WINDMILL spiral order.
+     * - Ring 0: center (1 hex)
+     * - Ring n: 6n hexes, starting from RIGHT and going counterclockwise
+     * 
+     * Returns list of (HexCoordinate, bucketIndex) pairs.
+     * Each ring is divided into 6 equal sectors (1/6 per bucket).
      */
-    fun generateSpiralCoordinates(maxRings: Int): List<HexCoordinate> {
-        val result = mutableListOf<HexCoordinate>()
-        result.add(HexCoordinate.ORIGIN)
+    fun generateWindmillSpiral(maxRings: Int): List<Pair<HexCoordinate, Int>> {
+        val result = mutableListOf<Pair<HexCoordinate, Int>>()
         
-        // Directions for traversing each edge of a ring (pointy-top)
+        // Ring 0: center, bucket 0 (special case - center belongs to most-used app, not a color)
+        result.add(Pair(HexCoordinate.ORIGIN, -1)) // -1 indicates center (no bucket)
+        
+        // Directions for counterclockwise traversal from RIGHT in pointy-top
+        // Starting at (ring, 0) which is the rightmost hex
+        // Directions: down-left, left, up-left, up-right, right, down-right
         val directions = listOf(
-            HexCoordinate(1, 0), HexCoordinate(0, 1), HexCoordinate(-1, 1),
-            HexCoordinate(-1, 0), HexCoordinate(0, -1), HexCoordinate(1, -1)
+            HexCoordinate(-1, 1),  // down-left
+            HexCoordinate(-1, 0),  // left
+            HexCoordinate(0, -1),  // up-left
+            HexCoordinate(1, -1),  // up-right
+            HexCoordinate(1, 0),   // right
+            HexCoordinate(0, 1)    // down-right
         )
         
         for (ring in 1..maxRings) {
-            // Start position for this ring (move to starting corner)
-            var hex = HexCoordinate(0, -ring)
+            // Start at rightmost hex of this ring: (ring, 0)
+            var hex = HexCoordinate(ring, 0)
+            
+            // Each ring has 6 * ring hexes
+            // Each bucket gets (ring) hexes per ring
+            var positionInRing = 0
             
             for (dir in 0 until 6) {
                 for (step in 0 until ring) {
-                    result.add(hex)
+                    // Calculate bucket: position / (ring) gives bucket index
+                    // This ensures each bucket gets exactly 'ring' hexes per ring
+                    val bucket = positionInRing / ring
+                    
+                    result.add(Pair(hex, bucket % 6))
+                    
                     hex = HexCoordinate(
                         hex.q + directions[dir].q,
                         hex.r + directions[dir].r
                     )
+                    positionInRing++
                 }
             }
         }
+        
         return result
+    }
+    
+    /**
+     * Legacy method for compatibility - returns just coordinates without bucket info.
+     */
+    fun generateSpiralCoordinates(maxRings: Int): List<HexCoordinate> {
+        return generateWindmillSpiral(maxRings).map { it.first }
     }
     
     private fun axialRound(q: Float, r: Float): HexCoordinate {

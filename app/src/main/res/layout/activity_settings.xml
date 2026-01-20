@@ -1,122 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
-
-    <!-- Hex Radius (Spacing) -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Hexagon Spacing"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
-
+    android:layout_height="match_parent">
+    
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <SeekBar
-            android:id="@+id/seekBarHexRadius"
-            android:layout_width="0dp"
+        <!-- Hex Radius (Spacing) -->
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:text="Hexagon Spacing"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <SeekBar
+                android:id="@+id/seekBarHexRadius"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/textHexRadiusValue"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:text="80dp"
+                android:gravity="end"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/textHexRadiusValue"
-            android:layout_width="60dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="80dp"
-            android:gravity="end"
-            android:textSize="14sp" />
-    </LinearLayout>
+            android:text="Controls the distance between hexagons"
+            android:textSize="12sp"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Controls the distance between hexagons"
-        android:textSize="12sp"
-        android:textColor="?android:textColorSecondary"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Icon Size -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Icon Size"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <SeekBar
-            android:id="@+id/seekBarIconSize"
-            android:layout_width="0dp"
+        <!-- Icon Size -->
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:text="Icon Size"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <SeekBar
+                android:id="@+id/seekBarIconSize"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/textIconSizeValue"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:text="100%"
+                android:gravity="end"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/textIconSizeValue"
-            android:layout_width="60dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="100%"
-            android:gravity="end"
-            android:textSize="14sp" />
-    </LinearLayout>
+            android:text="Scales the app icon size"
+            android:textSize="12sp"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="16dp" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Scales the app icon size"
-        android:textSize="12sp"
-        android:textColor="?android:textColorSecondary"
-        android:layout_marginBottom="16dp" />
-
-    <!-- Icon Padding -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Icon Padding"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginTop="8dp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <SeekBar
-            android:id="@+id/seekBarIconPadding"
-            android:layout_width="0dp"
+        <!-- Icon Padding -->
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:text="Icon Padding"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <SeekBar
+                android:id="@+id/seekBarIconPadding"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/textIconPaddingValue"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:text="4dp"
+                android:gravity="end"
+                android:textSize="14sp" />
+        </LinearLayout>
+        
+        <Switch
+            android:id="@+id/switchShowOutline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show Hexagon Outline"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
+            
+        <Switch
+            android:id="@+id/switchShowLabels"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show App Labels"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp" />
 
         <TextView
-            android:id="@+id/textIconPaddingValue"
-            android:layout_width="60dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="4dp"
-            android:gravity="end"
-            android:textSize="14sp" />
+            android:text="Permissions"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+            
+        <Button
+            android:id="@+id/btnUsageAccess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grant Usage Access"
+            android:layout_marginTop="8dp" />
+            
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Required for sorting apps by usage frequency"
+            android:textSize="12sp"
+            android:textColor="?android:textColorSecondary" />
+            
+        <Button
+            android:id="@+id/btnNotificationAccess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grant Notification Access"
+            android:layout_marginTop="16dp" />
+            
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Required for showing notification counts"
+            android:textSize="12sp"
+            android:textColor="?android:textColorSecondary"
+            android:layout_marginBottom="32dp" />
+
     </LinearLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Adds spacing around each icon"
-        android:textSize="12sp"
-        android:textColor="?android:textColorSecondary"
-        android:layout_marginBottom="16dp" />
-
-</LinearLayout>
+</ScrollView>

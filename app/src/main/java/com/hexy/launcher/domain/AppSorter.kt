@@ -1,92 +1,88 @@
 package com.hexy.launcher.domain
 
 import com.hexy.launcher.data.AppInfo
-import kotlin.math.sqrt
 
 /**
- * Sorts apps for hexagonal grid placement with ANGULAR COLOR SECTORS.
+ * Sorts apps for hexagonal grid placement with WINDMILL layout.
  *
  * Algorithm:
- * 1. Center: most used app
- * 2. Each color bucket (0-5) gets its own 60° angular sector
- * 3. Apps fill their sector DENSELY, radiating outward
- * 4. Sectors can be very uneven (30 Red apps, 3 Blue apps)
- * 5. Result: Colored wedges of varying lengths
+ * - Ring 0 (center): Most used app
+ * - Ring 1 (6 apps): Next 6 most used apps (usage-based, not color)
+ * - Ring 2+: Apps placed in color bucket sectors
+ *   - Each sector gets apps of that color, sorted by usage
+ *   - If bucket empty, slot stays empty (placeholder)
  */
 object AppSorter {
+    
+    // Placeholder app for empty slots
+    private var emptyPlaceholder: AppInfo? = null
     
     fun sortApps(apps: List<AppInfo>): List<AppInfo> {
         if (apps.isEmpty()) return emptyList()
         
-        // 1. Find center app
+        // Sort all apps by usage
         val sortedByUsage = apps.sortedByDescending { it.usageCount }
         
-        var centerApp: AppInfo? = sortedByUsage.firstOrNull()
-        if (centerApp != null && centerApp.usageCount == 0L) {
-            val phoneApp = apps.firstOrNull { 
-                it.packageName.contains("dialer", ignoreCase = true) || 
-                it.packageName.contains("phone", ignoreCase = true) 
-            }
-            if (phoneApp != null) {
-                centerApp = phoneApp
-            }
-        }
+        // Ring 0 + Ring 1 = first 7 apps by usage (not color)
+        val innerApps = sortedByUsage.take(7)
+        val outerApps = sortedByUsage.drop(7)
         
-        if (centerApp == null) return emptyList()
+        // Create placeholder for empty slots
+        emptyPlaceholder = sortedByUsage.first().copy(
+            packageName = "_empty_",
+            label = "",
+            usageCount = -1
+        )
         
-        // 2. Get remaining apps grouped by color bucket
-        val remaining = apps.toMutableList()
-        remaining.remove(centerApp)
-        
-        val buckets = (0..5).map { bucket ->
-            remaining.filter { it.colorBucket == bucket }
+        // Group outer apps by color bucket, sorted by usage within each
+        val bucketQueues = (0..5).map { bucket ->
+            outerApps.filter { it.colorBucket == bucket }
                 .sortedByDescending { it.usageCount }
+                .toMutableList()
         }
         
-        // 3. Generate spiral positions and classify by angular bucket
-        val hexPositions = HexGridCalculator(1f).generateSpiralCoordinates(25)
+        // Generate spiral with bucket assignments
+        val spiral = HexGridCalculator(1f).generateWindmillSpiral(25)
         
-        // For each spiral position (except center), get its bucket
-        // slotsByBucket[bucket] = list of (spiralIndex, hex) pairs, sorted by ring
-        val slotsByBucket = (0..5).map { bucket ->
-            (1 until hexPositions.size)
-                .map { index -> Pair(index, hexPositions[index]) }
-                .filter { (_, hex) -> getIdealBucketForHex(hex) == bucket }
-                .sortedBy { (_, hex) -> hex.ring }
+        // Build result
+        val result = mutableListOf<AppInfo>()
+        
+        // Add inner apps (ring 0 + ring 1) - first 7 positions
+        for (i in 0 until minOf(7, innerApps.size)) {
+            result.add(innerApps[i])
         }
         
-        // 4. Build result: Place apps in their sector's slots
-        // Collect (spiralIndex, app) pairs
-        val placements = mutableListOf<Pair<Int, AppInfo>>()
-        placements.add(Pair(0, centerApp)) // Center at index 0
+        // Fill remaining inner positions if not enough apps
+        while (result.size < 7 && innerApps.isNotEmpty()) {
+            result.add(emptyPlaceholder!!)
+        }
         
-        for (bucket in 0..5) {
-            val appList = buckets[bucket]
-            val slots = slotsByBucket[bucket]
+        // Add outer apps (ring 2+) - position 7 onwards
+        for (i in 7 until spiral.size) {
+            val bucket = spiral[i].second
             
-            for ((i, app) in appList.withIndex()) {
-                if (i < slots.size) {
-                    val (spiralIndex, _) = slots[i]
-                    placements.add(Pair(spiralIndex, app))
+            if (bucket in 0..5 && bucketQueues[bucket].isNotEmpty()) {
+                result.add(bucketQueues[bucket].removeAt(0))
+            } else {
+                // Empty slot - use placeholder
+                result.add(emptyPlaceholder!!)
+            }
+            
+            // Stop if all buckets empty
+            if (bucketQueues.all { it.isEmpty() }) {
+                // Fill remaining slots in current ring, then stop
+                val currentRing = spiral[i].first.ring
+                while (result.size < spiral.size && spiral[result.size].first.ring == currentRing) {
+                    result.add(emptyPlaceholder!!)
                 }
+                break
             }
         }
         
-        // 5. Sort by spiral index and return just the apps
-        placements.sortBy { it.first }
-        return placements.map { it.second }
+        return result
     }
     
-    private fun getIdealBucketForHex(hex: HexCoordinate): Int {
-        val x = sqrt(3.0) * (hex.q + hex.r / 2.0)
-        val y = 1.5 * hex.r
-        
-        val angle = Math.atan2(y, x)
-        val normalizedAngle = (Math.toDegrees(angle) + 360) % 360
-        
-        // Bucket 0: -30° to 30° (centered on 0° = right)
-        // Bucket 1: 30° to 90° (centered on 60°)
-        // ...
-        return ((normalizedAngle + 30) / 60).toInt() % 6
+    fun isPlaceholder(app: AppInfo): Boolean {
+        return app.packageName == "_empty_"
     }
 }

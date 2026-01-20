@@ -1,9 +1,10 @@
 package com.hexy.launcher.ui
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
-import com.hexy.launcher.R
 import com.hexy.launcher.databinding.ActivitySettingsBinding
 import com.hexy.launcher.util.SettingsManager
 
@@ -20,6 +21,32 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.title = "Launcher Settings"
         
         setupSeekBars()
+        setupToggles()
+        setupPermissions()
+    }
+    
+    private fun setupToggles() {
+        binding.switchShowOutline.isChecked = SettingsManager.getShowOutline(this)
+        binding.switchShowOutline.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setShowOutline(this, isChecked)
+        }
+        
+        binding.switchShowLabels.isChecked = SettingsManager.getShowLabels(this)
+        binding.switchShowLabels.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setShowLabels(this, isChecked)
+        }
+    }
+    
+    private fun setupPermissions() {
+        binding.btnUsageAccess.setOnClickListener {
+            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            startActivity(intent)
+        }
+        
+        binding.btnNotificationAccess.setOnClickListener {
+            val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+            startActivity(intent)
+        }
     }
     
     private fun setupSeekBars() {

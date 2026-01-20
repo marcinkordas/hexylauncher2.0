@@ -9,11 +9,15 @@ object SettingsManager {
     private const val KEY_HEX_RADIUS = "hex_radius"
     private const val KEY_ICON_SIZE_MULTIPLIER = "icon_size_multiplier"
     private const val KEY_ICON_PADDING = "icon_padding"
+    private const val KEY_SHOW_OUTLINE = "show_outline"
+    private const val KEY_SHOW_LABELS = "show_labels"
     
     // Default values
     const val DEFAULT_HEX_RADIUS = 96f
     const val DEFAULT_ICON_SIZE_MULTIPLIER = 1.0f
     const val DEFAULT_ICON_PADDING = 12f
+    const val DEFAULT_SHOW_OUTLINE = true
+    const val DEFAULT_SHOW_LABELS = true
     
     // Min/Max ranges
     const val MIN_HEX_RADIUS = 50f
@@ -54,6 +58,26 @@ object SettingsManager {
     fun setIconPadding(context: Context, value: Float) {
         getPrefs(context).edit()
             .putFloat(KEY_ICON_PADDING, value.coerceIn(MIN_ICON_PADDING, MAX_ICON_PADDING))
+            .apply()
+    }
+    
+    fun getShowOutline(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_SHOW_OUTLINE, DEFAULT_SHOW_OUTLINE)
+    }
+    
+    fun setShowOutline(context: Context, value: Boolean) {
+        getPrefs(context).edit()
+            .putBoolean(KEY_SHOW_OUTLINE, value)
+            .apply()
+    }
+    
+    fun getShowLabels(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_SHOW_LABELS, DEFAULT_SHOW_LABELS)
+    }
+    
+    fun setShowLabels(context: Context, value: Boolean) {
+        getPrefs(context).edit()
+            .putBoolean(KEY_SHOW_LABELS, value)
             .apply()
     }
 }

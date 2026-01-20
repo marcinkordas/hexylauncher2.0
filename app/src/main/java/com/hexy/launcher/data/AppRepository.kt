@@ -25,9 +25,11 @@ class AppRepository(private val context: Context) {
             return@withContext cache.map { app ->
                 val key = if (app.isShortcut && app.shortcutId != null) "${app.packageName}_${app.shortcutId}" else app.packageName
                 val stats = usageStats[key]
+                val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(app.packageName)
                 app.copy(
                     usageCount = stats?.first ?: 0L,
-                    lastUsedTimestamp = stats?.second ?: 0L
+                    lastUsedTimestamp = stats?.second ?: 0L,
+                    notificationCount = notifCount
                 )
             }
         }
@@ -49,6 +51,8 @@ class AppRepository(private val context: Context) {
                 val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
                 val stats = usageStats[packageName]
 
+                val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(packageName)
+
                 AppInfo(
                     packageName = packageName,
                     label = label,
@@ -57,6 +61,7 @@ class AppRepository(private val context: Context) {
                     colorBucket = bucket,
                     usageCount = stats?.first ?: 0L,
                     lastUsedTimestamp = stats?.second ?: 0L,
+                    notificationCount = notifCount,
                     isShortcut = false,
                     userHandle = currentUser
                 )
@@ -81,6 +86,8 @@ class AppRepository(private val context: Context) {
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
                         val stats = usageStats[shortcutKey]
 
+                        val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(shortcut.`package`)
+                        
                         AppInfo(
                             packageName = shortcut.`package`,
                             label = shortcut.shortLabel?.toString() ?: shortcut.id,
@@ -89,6 +96,7 @@ class AppRepository(private val context: Context) {
                             colorBucket = bucket,
                             usageCount = stats?.first ?: 0L,
                             lastUsedTimestamp = stats?.second ?: 0L,
+                            notificationCount = notifCount,
                             isShortcut = true,
                             shortcutId = shortcut.id,
                             userHandle = shortcut.userHandle

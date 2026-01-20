@@ -10,6 +10,7 @@ data class AppInfo(
     val colorBucket: Int,        // 0-5 (6 buckets)
     val usageCount: Long,        // From UsageStats
     val lastUsedTimestamp: Long, // For recency sorting
+    val notificationCount: Int = 0, // Active notification count
     val isShortcut: Boolean = false,  // True if PWA/shortcut
     val shortcutId: String? = null,    // ShortcutInfo ID if applicable
     val userHandle: android.os.UserHandle? = null // User handle for the app/shortcut
