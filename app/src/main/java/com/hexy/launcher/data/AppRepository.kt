@@ -48,7 +48,7 @@ class AppRepository(private val context: Context) {
                 val packageName = ri.activityInfo.packageName
                 val label = ri.loadLabel(packageManager).toString()
                 val icon = ri.loadIcon(packageManager)
-                val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
+                val (dominantColor, bucket) = ColorExtractor.extractColor(icon, packageName)
                 val stats = usageStats[packageName]
 
                 val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(packageName)
@@ -82,7 +82,7 @@ class AppRepository(private val context: Context) {
                         val icon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi) 
                             ?: context.packageManager.getApplicationIcon(shortcut.`package`)
                             
-                        val (dominantColor, bucket) = ColorExtractor.extractColor(icon)
+                        val (dominantColor, bucket) = ColorExtractor.extractColor(icon, shortcut.`package`)
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
                         val stats = usageStats[shortcutKey]
 

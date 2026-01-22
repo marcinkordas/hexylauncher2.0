@@ -1,174 +1,412 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark">
     
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
-
-        <!-- Hex Radius (Spacing) -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Hexagon Spacing"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <SeekBar
-                android:id="@+id/seekBarHexRadius"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/textHexRadiusValue"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="80dp"
-                android:gravity="end"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Controls the distance between hexagons"
-            android:textSize="12sp"
-            android:textColor="?android:textColorSecondary"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Icon Size -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Icon Size"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <SeekBar
-                android:id="@+id/seekBarIconSize"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/textIconSizeValue"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="100%"
-                android:gravity="end"
-                android:textSize="14sp" />
-        </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Scales the app icon size"
-            android:textSize="12sp"
-            android:textColor="?android:textColorSecondary"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Icon Padding -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Icon Padding"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <SeekBar
-                android:id="@+id/seekBarIconPadding"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/textIconPaddingValue"
-                android:layout_width="60dp"
-                android:layout_height="wrap_content"
-                android:text="4dp"
-                android:gravity="end"
-                android:textSize="14sp" />
-        </LinearLayout>
         
-        <Switch
-            android:id="@+id/switchShowOutline"
+        <!-- Layout Settings Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Show Hexagon Outline"
-            android:textSize="16sp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1E1E1E">
             
-        <Switch
-            android:id="@+id/switchShowLabels"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Show App Labels"
-            android:textSize="16sp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Layout"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="16dp" />
 
-        <TextView
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hexagon Spacing"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <SeekBar
+                        android:id="@+id/seekBarHexRadius"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/textHexRadiusValue"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Icon Size"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <SeekBar
+                        android:id="@+id/seekBarIconSize"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/textIconSizeValue"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Icon Padding"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <SeekBar
+                        android:id="@+id/seekBarIconPadding"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/textIconPaddingValue"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Outline Width"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <SeekBar
+                        android:id="@+id/seekBarOutlineWidth"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/textOutlineWidthValue"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Orientation"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+                    
+                <Spinner
+                    android:id="@+id/spinnerHexOrientation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@android:color/white" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Appearance Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Permissions"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp" />
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1E1E1E">
             
-        <Button
-            android:id="@+id/btnUsageAccess"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Appearance"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="12dp" />
+        
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchShowOutline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Show Outline"
+                    android:textColor="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchShowLabels"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Show Labels"
+                    android:textColor="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchShowNotificationGlow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Notification Glow"
+                    android:textColor="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchDimStatusBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dim Status Bar"
+                    android:textColor="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchDarkTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dark Theme"
+                    android:textColor="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchUnifiedBucketColors"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Unified Bucket Colors"
+                    android:textColor="@android:color/white" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Corner Rounding"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <SeekBar
+                        android:id="@+id/seekBarCornerRadius"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/textCornerRadiusValue"
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@android:color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Sorting Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grant Usage Access"
-            android:layout_marginTop="8dp" />
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1E1E1E">
             
-        <TextView
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sorting"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="12dp" />
+                    
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sort Apps By"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white" />
+                    
+                <Spinner
+                    android:id="@+id/spinnerSortOrder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@android:color/white" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Search Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Required for sorting apps by usage frequency"
-            android:textSize="12sp"
-            android:textColor="?android:textColorSecondary" />
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1E1E1E">
             
-        <Button
-            android:id="@+id/btnNotificationAccess"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Search"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="12dp" />
+                    
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Position"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white" />
+                    
+                <Spinner
+                    android:id="@+id/spinnerSearchPosition"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@android:color/white" />
+                    
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchSearchWithMic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Voice Search"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="8dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Actions Card -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grant Notification Access"
-            android:layout_marginTop="16dp" />
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#1E1E1E">
             
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Required for showing notification counts"
-            android:textSize="12sp"
-            android:textColor="?android:textColorSecondary"
-            android:layout_marginBottom="32dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Actions"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:layout_marginBottom="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnManageApps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Manage App Visibility"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUsageAccess"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Usage Access"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNotificationAccess"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Notification Access"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+                    
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetDefaultLauncher"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Set as Default Launcher"
+                    style="@style/Widget.Material3.Button.TonalButton" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 </ScrollView>

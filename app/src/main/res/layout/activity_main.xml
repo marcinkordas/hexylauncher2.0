@@ -8,8 +8,85 @@
         android:id="@+id/hexGrid"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+        
+    <!-- Search Bar Container (Top/Bottom handled by LayoutParams in code or multiple/hidden views) -->
+    <!-- Simpler approach: Include both, show one based on settings -->
+    
+    <LinearLayout
+        android:id="@+id/searchContainerTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="72dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:background="@drawable/search_bg"
+        android:padding="12dp"
+        android:elevation="4dp">
 
-    <!-- Settings FAB -->
+        <EditText
+            android:id="@+id/searchEtTop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Search apps..."
+            android:textColorHint="#80555555"
+            android:textColor="#333333"
+            android:background="@android:color/transparent"
+            android:maxLines="1"
+            android:imeOptions="actionSearch"
+            android:inputType="text" />
+            
+        <ImageButton
+            android:id="@+id/searchMicTop"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="#555555" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/searchContainerBottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp" 
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:background="@drawable/search_bg"
+        android:padding="12dp"
+        android:elevation="4dp">
+        
+        <EditText
+            android:id="@+id/searchEtBottom"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Search apps..."
+            android:textColorHint="#80555555"
+            android:textColor="#333333"
+            android:background="@android:color/transparent"
+            android:maxLines="1"
+            android:imeOptions="actionSearch"
+            android:inputType="text" />
+            
+        <ImageButton
+            android:id="@+id/searchMicBottom"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="#555555" />
+    </LinearLayout>
+
+    <!-- Settings FAB - One UI 8 Style -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabSettings"
         android:layout_width="wrap_content"
@@ -19,6 +96,7 @@
         android:src="@android:drawable/ic_menu_preferences"
         android:contentDescription="Settings"
         app:fabSize="normal"
-        app:backgroundTint="#80000000" />
+        app:tint="#555555"
+        app:backgroundTint="#E8FFFFFF" />
 
 </FrameLayout>
