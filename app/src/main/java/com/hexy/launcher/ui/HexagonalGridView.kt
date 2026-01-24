@@ -2,6 +2,8 @@ package com.hexy.launcher.ui
 
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
+import android.content.ClipData
+import android.content.ClipDescription
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -38,6 +40,7 @@ class HexagonalGridView @JvmOverloads constructor(
     private var showNotificationGlow = true
     private var outlineWidth = 1.5f
     private var unifiedBucketColors = false
+    private var cornerRadius = 0f
     
     private var offsetX = 0f
     private var offsetY = 0f
@@ -153,6 +156,12 @@ class HexagonalGridView @JvmOverloads constructor(
         showNotificationGlow = SettingsManager.getShowNotificationGlow(context)
         outlineWidth = SettingsManager.getOutlineWidth(context)
         unifiedBucketColors = SettingsManager.getUnifiedBucketColors(context)
+        cornerRadius = SettingsManager.getCornerRadius(context)
+        
+        // Apply corner rounding effect to paints
+        val cornerEffect = if (cornerRadius > 0) android.graphics.CornerPathEffect(cornerRadius) else null
+        hexPaint.pathEffect = cornerEffect
+        whitePaint.pathEffect = cornerEffect
         
         val orientation = SettingsManager.getHexOrientation(context)
         val orientationEnum = when (orientation) {
@@ -396,10 +405,22 @@ class HexagonalGridView @JvmOverloads constructor(
     
     private fun drawIconAtOrigin(canvas: Canvas, app: AppInfo, yOffset: Float) {
         val baseIconSize = hexRadius * 1.1f
-        val iconSize = (baseIconSize * iconSizeMultiplier - iconPadding * 2).toInt()
-        val halfSize = iconSize / 2
+        val maxSize = (baseIconSize * iconSizeMultiplier - iconPadding * 2).toInt()
         
-        app.icon.setBounds(-halfSize, -halfSize + yOffset.toInt(), halfSize, halfSize + yOffset.toInt())
+        // Preserve aspect ratio
+        val intrinsicW = app.icon.intrinsicWidth
+        val intrinsicH = app.icon.intrinsicHeight
+        
+        val scale = if (intrinsicW > 0 && intrinsicH > 0) {
+            minOf(maxSize.toFloat() / intrinsicW, maxSize.toFloat() / intrinsicH)
+        } else 1f
+        
+        val width = (intrinsicW * scale).toInt().coerceAtLeast(1)
+        val height = (intrinsicH * scale).toInt().coerceAtLeast(1)
+        val halfW = width / 2
+        val halfH = height / 2
+        
+        app.icon.setBounds(-halfW, -halfH + yOffset.toInt(), halfW, halfH + yOffset.toInt())
         app.icon.draw(canvas)
     }
     
@@ -436,6 +457,19 @@ class HexagonalGridView @JvmOverloads constructor(
             if (index >= 0 && index < apps.size) {
                 val app = apps[index]
                 if (!AppSorter.isPlaceholder(app)) {
+                    // Start system drag-and-drop
+                    // val item = android.content.ClipData.Item(app.packageName)
+                    // val dragData = android.content.ClipData(
+                    //     app.label,
+                    //     arrayOf(android.content.ClipDescription.MIMETYPE_TEXT_PLAIN),
+                    //     item
+                    // )
+                    
+                    // val shadow = android.view.View.DragShadowBuilder(this@HexagonalGridView)
+                    // @Suppress("DEPRECATION")
+                    // startDrag(dragData, shadow, null, 0)
+                    performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                    
                     onAppLongClickListener?.invoke(app, e.x, e.y)
                 }
             }

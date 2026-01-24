@@ -1,13 +1,11 @@
 package com.hexy.launcher
 
+import android.app.AlertDialog
+import android.content.ClipData
 import android.content.Intent
 import android.os.Bundle
-import android.speech.RecognizerIntent
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
-import android.widget.PopupMenu
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.hexy.launcher.databinding.ActivityMainBinding
@@ -20,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: LauncherViewModel by viewModels()
+    private var allApps: List<AppInfo> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,69 +27,67 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.setActivityContext(this)
         setupGrid()
-        setupFab()
-        setupSearchBar()
+        setupDock()
         
-        // Load apps immediately - no permission needed with click-based tracking
         viewModel.loadApps()
     }
     
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        // If home button pressed while already at home, animate to center
         if (intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
             binding.hexGrid.animateToOrigin()
         }
     }
     
-    private fun setupFab() {
-        binding.fabSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
+    private fun setupDock() {
+        val position = SettingsManager.getSearchPosition(this)
+        
+        // Show dock based on position setting
+        binding.dockTop.visibility = View.GONE
+        binding.dockBottom.visibility = View.GONE
+        
+        val dock = when (position) {
+            SettingsManager.SearchPosition.TOP -> binding.dockTop
+            SettingsManager.SearchPosition.BOTTOM -> binding.dockBottom
+            SettingsManager.SearchPosition.NONE -> binding.dockBottom // Default to bottom
+        }
+        dock.visibility = View.VISIBLE
+        
+        // Setup callbacks
+        dock.onSearchClick = { showSearchDialog() }
+        dock.onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
+        dock.onAppClick = { app -> viewModel.launchApp(app) }
+        dock.onAppLongClick = { app -> 
+            AlertDialog.Builder(this)
+                .setTitle(app.label)
+                .setItems(arrayOf("Remove from Dock")) { _, _ ->
+                    dock.removeApp(app)
+                }
+                .show()
         }
     }
     
-    private fun setupSearchBar() {
-        val position = SettingsManager.getSearchPosition(this)
-        val withMic = SettingsManager.getSearchWithMic(this)
-        
-        // Always hide both first, then show the correct one
-        binding.searchContainerTop.visibility = View.GONE
-        binding.searchContainerBottom.visibility = View.GONE
-        
-        if (position == SettingsManager.SearchPosition.NONE) {
-            return
+    private fun showSearchDialog() {
+        val editText = EditText(this).apply {
+            hint = "Search apps..."
+            setPadding(48, 32, 48, 32)
         }
         
-        val container = if (position == SettingsManager.SearchPosition.TOP) 
-            binding.searchContainerTop else binding.searchContainerBottom
-        
-        val editText = if (position == SettingsManager.SearchPosition.TOP)
-            binding.searchEtTop else binding.searchEtBottom
-            
-        val micButton = if (position == SettingsManager.SearchPosition.TOP)
-            binding.searchMicTop else binding.searchMicBottom
-            
-        container.visibility = View.VISIBLE
-        micButton.visibility = if (withMic) View.VISIBLE else View.GONE
-        
-        editText.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                viewModel.filterApps(s.toString())
+        AlertDialog.Builder(this)
+            .setTitle("Search")
+            .setView(editText)
+            .setPositiveButton("Search") { dialog, _ ->
+                val query = editText.text.toString()
+                if (query.isNotBlank()) {
+                    viewModel.filterApps(query)
+                }
+                dialog.dismiss()
             }
-            override fun afterTextChanged(s: Editable?) {}
-        })
-        
-        micButton.setOnClickListener {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .setNegativeButton("Cancel") { dialog, _ ->
+                viewModel.filterApps("") // Reset filter
+                dialog.dismiss()
             }
-            try {
-                startActivityForResult(intent, REQUEST_CODE_VOICE_SEARCH)
-            } catch (e: Exception) {
-                // Handle exception
-            }
-        }
+            .show()
     }
 
     private fun setupGrid() {
@@ -103,23 +100,34 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.apps.observe(this) { apps ->
+            allApps = apps
             binding.hexGrid.setApps(apps)
+            
+            // Load dock apps once we have the full list
+            val position = SettingsManager.getSearchPosition(this)
+            val dock = if (position == SettingsManager.SearchPosition.TOP) binding.dockTop else binding.dockBottom
+            dock.loadDockApps(apps)
         }
     }
 
     private fun showContextMenu(app: AppInfo) {
-        android.app.AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle(app.label)
-            .setItems(arrayOf("Hide App", "App Info", "Uninstall")) { _, which ->
+            .setItems(arrayOf("Pin to Dock", "Hide App", "App Info", "Uninstall")) { _, which ->
                 when (which) {
-                    0 -> viewModel.hideApp(app)
-                    1 -> {
+                    0 -> {
+                        val position = SettingsManager.getSearchPosition(this)
+                        val dock = if (position == SettingsManager.SearchPosition.TOP) binding.dockTop else binding.dockBottom
+                        dock.addApp(app)
+                    }
+                    1 -> viewModel.hideApp(app)
+                    2 -> {
                         val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                             data = android.net.Uri.parse("package:${app.packageName}")
                         }
                         startActivity(intent)
                     }
-                    2 -> {
+                    3 -> {
                         val intent = Intent(Intent.ACTION_DELETE).apply {
                             data = android.net.Uri.fromParts("package", app.packageName, null)
                         }
@@ -133,26 +141,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.hexGrid.refreshSettings()
-        // Removed automatic scrollToOrigin on resume to allow returning to previous state
-        // Only home button press triggers animation via onNewIntent
-        setupSearchBar() // Refresh search bar visibility settings
+        setupDock()
         viewModel.loadApps()
-    }
-    
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_VOICE_SEARCH && resultCode == RESULT_OK) {
-            val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val spokenText = results?.get(0)
-            if (spokenText != null) {
-                val editText = if (binding.searchContainerTop.visibility == View.VISIBLE) 
-                    binding.searchEtTop else binding.searchEtBottom
-                editText.setText(spokenText)
-            }
-        }
-    }
-    
-    companion object {
-        private const val REQUEST_CODE_VOICE_SEARCH = 101
     }
 }

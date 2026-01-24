@@ -174,4 +174,11 @@ object SettingsManager {
     fun setUnifiedBucketColors(context: Context, value: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_UNIFIED_BUCKET_COLORS, value).apply()
     }
+    
+    // Dock Apps (pinned to dock bar)
+    private const val KEY_DOCK_APPS = "dock_apps"
+    fun getDockApps(context: Context): Set<String> = getPrefs(context).getStringSet(KEY_DOCK_APPS, emptySet()) ?: emptySet()
+    fun setDockApps(context: Context, dockApps: Set<String>) {
+        getPrefs(context).edit().putStringSet(KEY_DOCK_APPS, dockApps).apply()
+    }
 }
