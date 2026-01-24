@@ -1,4 +1,4 @@
-package com.hexy.launcher.data
+package com.hexgrid.launcher.data
 
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager

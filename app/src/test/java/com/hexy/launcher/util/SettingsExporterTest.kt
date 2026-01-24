@@ -1,4 +1,4 @@
-package com.hexy.launcher.util
+package com.hexgrid.launcher.util
 
 import org.junit.Assert.*
 import org.junit.Test

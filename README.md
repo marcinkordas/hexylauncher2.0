@@ -1,119 +1,97 @@
-# Hexy Launcher 2.0
+# HexGrid Launcher
 
-An innovative Android launcher featuring a **hexagonal grid layout** with intelligent app sorting based on color, usage frequency, and recency.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
+[![API](https://img.shields.io/badge/API-26%2B-brightgreen.svg)](https://android-arsenal.com/api?level=26)
 
-![Android](https://img.shields.io/badge/Platform-Android-green.svg)
-![Min SDK](https://img.shields.io/badge/Min%20SDK-26-blue.svg)
-![Kotlin](https://img.shields.io/badge/Language-Kotlin-purple.svg)
+A modern Android launcher featuring an innovative **hexagonal grid layout** for organizing your apps with intelligent color-based sorting.
+
+**Inspired by** the original Hexy Launcher concept from SwiftKey's experimental labs (discontinued).
 
 ## ✨ Features
 
-### 🎯 Smart Hexagonal Grid
+- 🔷 **Hexagonal App Grid** - Unique hexagonal layout with smart app positioning
+- 🎨 **Color-Based Sorting** - Apps automatically arranged by dominant color
+- 🔍 **Inline Animated Search** - Smooth sliding search with live filtering
+- 📌 **Customizable Dock** - Drag-to-reorder, drag-out-to-unpin functionality
+- 🌈 **Material You** - Dynamic theming based on your wallpaper (Android 12+)
+- 🎯 **Smart App Placement** - Frequently used apps positioned near center
+- 💾 **Settings Backup/Restore** - Export/import launcher configuration as JSON
+- 👁️ **Hide Apps** - Keep unwanted apps out of sight
+- ⚙️ **Customizable** - Adjustable grid size, transparency, dock position
 
-- **Unique Layout**: Apps displayed in a hexagonal grid pattern instead of traditional rows/columns
-- **Axial Coordinates**: Optimized mathematical rendering using axial coordinate system
-- **Infinite Scroll**: Pan and navigate through all your apps seamlessly
+## 📸 Screenshots
 
-### 🧠 Intelligent Sorting
+_Coming soon_
 
-- **Center Focus**: Your most-used app occupies the center hexagon
-- **Recent Access**: Inner rings (1-2) display your 18 most recently used apps
-- **Color Grouping**: Outer apps organized into 6 color buckets for intuitive visual clustering
-- **Usage-Based**: Within each color group, frequently-used apps appear closer to center
+## 📥 Download
 
-### 🎨 Modern UI
+- **F-Droid**: _Coming soon_
+- **GitHub Releases**: [Download APK](https://github.com/yourusername/hexgrid-launcher/releases)
+- **Google Play**: _Coming soon_
 
-- **System Icons**: Full, high-quality app icons without clipping or masking
-- **Color Analysis**: Automatic dominant color extraction using Palette API
-- **Smooth Interactions**: Gesture-based scrolling, tap to launch, long-press for options
-- **Contextual Menu**: Hide apps or trigger uninstall directly from the grid
+## 🛠️ Build from Source
 
-### ⚙️ Configurable Settings
+### Requirements
 
-- **Hex Spacing**: Adjust distance between hexagons (50-150dp)
-- **Icon Size**: Scale app icons (50-150%)
-- **Icon Padding**: Control spacing around each icon (0-20dp)
+- Android Studio Ladybug or newer
+- JDK 17
+- Android SDK API 34
 
-### 🌐 PWA & Shortcuts Support
+### Build Instructions
 
-- Integrated `ShortcutManager` for pinned web apps and system shortcuts
-- Full support for Progressive Web Apps installed via Chrome/Edge
+```bash
+# Clone repository
+git clone https://github.com/yourusername/hexgrid-launcher.git
+cd hexgrid-launcher
 
-## 🚀 Getting Started
+# Build debug APK
+./gradlew assembleDebug
 
-### Prerequisites
+# Build release APK (requires keystore)
+./gradlew assembleRelease
 
-- Android Studio Arctic Fox or later
-- Android SDK 26+ (Android 8.0 Oreo)
-- Kotlin 1.9+
-
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/marcinkordas/hexylauncher2.0.git
-   cd hexylauncher2.0
-   ```
-
-2. Open the project in Android Studio
-
-3. Sync Gradle files (Android Studio will prompt you)
-
-4. Run on device or emulator (API 26+)
-
-### First Launch Setup
-
-1. Grant **Usage Access** permission when prompted (required for usage statistics)
-2. Press **Home** button and select "Hexy Launcher" as your default launcher
-3. Access **Settings** via the gear icon to customize spacing and icon sizes
-
-## 📐 Technical Architecture
-
-### Core Components
-
-- **HexCoordinate**: Axial coordinate system with ring calculations
-- **HexGridCalculator**: Hex↔Pixel conversions and spiral generation
-- **AppSorter**: Intelligent app placement algorithm
-- **ColorExtractor**: Palette API integration with 6-bucket hue mapping
-- **HexagonalGridView**: Custom View with gesture detection and rendering
-
-### Tech Stack
-
-- **Language**: Kotlin
-- **Architecture**: MVVM (ViewModel + LiveData)
-- **UI**: Custom Views with Canvas drawing
-- **Async**: Kotlin Coroutines
-- **Color Analysis**: AndroidX Palette
-- **Settings**: SharedPreferences with PreferenceManager
-
-## 📱 Screenshots
-
-_(Coming soon - build and run to see it in action!)_
-
-## 🛠️ Configuration
-
-Settings are accessible via the toolbar menu:
-
-- **Hexagon Spacing**: Controls grid density
-- **Icon Size**: Adjusts how large app icons appear
-- **Icon Padding**: Adds breathing room around icons
-
-All settings persist and apply immediately.
-
-## 📄 Documentation
-
-- [DEVELOPMENT_SPEC.md](DEVELOPMENT_SPEC.md) - Complete technical specification
-- [TASK_LIST.md](TASK_LIST.md) - Development task breakdown
+# Install to connected device
+./gradlew installDebug
+```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open issues or submit PRs.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-## 📝 License
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-This project is open source. See LICENSE file for details.
+## 💖 Support Development
 
-## 🙏 Acknowledgments
+If you find HexGrid Launcher useful, consider supporting the project:
 
-Built with inspiration from modern home screen designs and hexagonal grid mathematics.
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/yourname)
+- 💝 [GitHub Sponsors](https://github.com/sponsors/yourname)
+- 🎁 [Patreon](https://patreon.com/yourname)
+
+## 📜 License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Credits
+
+- **Original Concept**: SwiftKey Hexy (discontinued experimental launcher)
+- **Development**: Built from scratch as a spiritual successor
+- **Community**: Thanks to all contributors and users
+
+## ⚠️ Disclaimer
+
+This is an independent open-source project and is not affiliated with, endorsed by, or connected to SwiftKey or Microsoft Corporation.
+
+## 📞 Contact
+
+- **Issues**: [GitHub Issues](https://github.com/yourusername/hexgrid-launcher/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/hexgrid-launcher/discussions)
+
+---
+
+Made with ❤️ by the open-source community

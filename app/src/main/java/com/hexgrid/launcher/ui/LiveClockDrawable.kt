@@ -1,4 +1,4 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.graphics.*
 import android.graphics.drawable.Drawable

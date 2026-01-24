@@ -1,4 +1,4 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.app.role.RoleManager
 import android.content.Intent
@@ -13,9 +13,9 @@ import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.hexy.launcher.databinding.ActivitySettingsBinding
-import com.hexy.launcher.util.SettingsExporter
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.databinding.ActivitySettingsBinding
+import com.hexgrid.launcher.util.SettingsExporter
+import com.hexgrid.launcher.util.SettingsManager
 
 class SettingsActivity : AppCompatActivity() {
     

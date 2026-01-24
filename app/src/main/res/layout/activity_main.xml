@@ -4,13 +4,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.hexy.launcher.ui.HexagonalGridView
+    <com.hexgrid.launcher.ui.HexagonalGridView
         android:id="@+id/hexGrid"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
         
     <!-- Dock Bar (Top) - One UI 8 Style -->
-    <com.hexy.launcher.ui.DockView
+    <com.hexgrid.launcher.ui.DockView
         android:id="@+id/dockTop"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -21,7 +21,7 @@
         android:visibility="gone" />
         
     <!-- Dock Bar (Bottom) - One UI 8 Style -->
-    <com.hexy.launcher.ui.DockView
+    <com.hexgrid.launcher.ui.DockView
         android:id="@+id/dockBottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

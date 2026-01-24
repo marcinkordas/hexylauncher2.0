@@ -1,14 +1,14 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.data.AppRepository
-import com.hexy.launcher.domain.AppSorter
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.data.AppRepository
+import com.hexgrid.launcher.domain.AppSorter
+import com.hexgrid.launcher.util.SettingsManager
 import kotlinx.coroutines.launch
 
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {

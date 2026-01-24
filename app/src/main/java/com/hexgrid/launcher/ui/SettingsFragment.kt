@@ -1,8 +1,8 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.os.Bundle
 import androidx.preference.PreferenceFragmentCompat
-import com.hexy.launcher.R
+import com.hexgrid.launcher.R
 
 class SettingsFragment : PreferenceFragmentCompat() {
 

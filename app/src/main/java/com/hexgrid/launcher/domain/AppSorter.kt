@@ -1,8 +1,8 @@
-package com.hexy.launcher.domain
+package com.hexgrid.launcher.domain
 
 import android.content.Context
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.util.SettingsManager
 
 /**
  * Sorts apps for hexagonal grid placement with WINDMILL layout.

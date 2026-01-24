@@ -1,10 +1,10 @@
-package com.hexy.launcher
+package com.hexgrid.launcher
 
 import android.app.Application
 import android.os.Build
 import com.google.android.material.color.DynamicColors
 
-class HexyLauncherApp : Application() {
+class HexGridLauncherApp : Application() {
     
     override fun onCreate() {
         super.onCreate()

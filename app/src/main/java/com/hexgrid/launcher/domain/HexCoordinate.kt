@@ -1,4 +1,4 @@
-package com.hexy.launcher.domain
+package com.hexgrid.launcher.domain
 
 /**
  * Axial coordinate system for hexagonal grids.

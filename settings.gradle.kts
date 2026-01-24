@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "HexyLauncher"
+rootProject.name = "HexGridLauncher"
 include(":app")

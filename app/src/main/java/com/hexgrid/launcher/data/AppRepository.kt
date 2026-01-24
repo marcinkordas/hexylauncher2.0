@@ -1,4 +1,4 @@
-package com.hexy.launcher.data
+package com.hexgrid.launcher.data
 
 import android.content.Context
 import android.content.Intent
@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
 import android.os.Build
-import com.hexy.launcher.util.ColorExtractor
+import com.hexgrid.launcher.util.ColorExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

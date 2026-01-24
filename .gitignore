@@ -26,6 +26,9 @@ gradle-app.setting
 # Local configuration file (sdk path, etc)
 local.properties
 
+# Keystore configuration (contains passwords)
+keystore.properties
+
 # IntelliJ
 *.iml
 .idea/

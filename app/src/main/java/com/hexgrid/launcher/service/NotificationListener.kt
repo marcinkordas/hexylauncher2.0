@@ -1,4 +1,4 @@
-package com.hexy.launcher.service
+package com.hexgrid.launcher.service
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification

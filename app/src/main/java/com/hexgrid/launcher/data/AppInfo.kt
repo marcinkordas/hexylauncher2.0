@@ -1,4 +1,4 @@
-package com.hexy.launcher.data
+package com.hexgrid.launcher.data
 
 import android.graphics.drawable.Drawable
 

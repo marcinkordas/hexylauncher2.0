@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hexy.launcher"
+    namespace = "com.hexgrid.launcher"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.hexy.launcher"
+        applicationId = "com.hexgrid.launcher"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

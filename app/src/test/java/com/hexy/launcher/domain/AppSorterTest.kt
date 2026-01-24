@@ -1,6 +1,6 @@
-package com.hexy.launcher.domain
+package com.hexgrid.launcher.domain
 
-import com.hexy.launcher.data.AppInfo
+import com.hexgrid.launcher.data.AppInfo
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock

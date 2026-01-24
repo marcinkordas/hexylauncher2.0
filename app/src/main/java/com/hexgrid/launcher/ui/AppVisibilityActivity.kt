@@ -1,14 +1,14 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.data.AppRepository
-import com.hexy.launcher.databinding.ActivityAppVisibilityBinding
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.data.AppRepository
+import com.hexgrid.launcher.databinding.ActivityAppVisibilityBinding
+import com.hexgrid.launcher.util.SettingsManager
 import kotlinx.coroutines.launch
 
 class AppVisibilityActivity : AppCompatActivity() {

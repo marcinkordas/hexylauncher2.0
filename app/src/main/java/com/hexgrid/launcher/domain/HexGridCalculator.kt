@@ -1,4 +1,4 @@
-package com.hexy.launcher.domain
+package com.hexgrid.launcher.domain
 
 import android.graphics.PointF
 import kotlin.math.sqrt

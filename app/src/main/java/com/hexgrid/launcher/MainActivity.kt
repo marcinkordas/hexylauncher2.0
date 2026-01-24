@@ -1,4 +1,4 @@
-package com.hexy.launcher
+package com.hexgrid.launcher
 
 import android.app.AlertDialog
 import android.content.Intent
@@ -7,11 +7,11 @@ import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.hexy.launcher.databinding.ActivityMainBinding
-import com.hexy.launcher.ui.LauncherViewModel
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.ui.SettingsActivity
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.databinding.ActivityMainBinding
+import com.hexgrid.launcher.ui.LauncherViewModel
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.ui.SettingsActivity
+import com.hexgrid.launcher.util.SettingsManager
 
 class MainActivity : AppCompatActivity() {
 

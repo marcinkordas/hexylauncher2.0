@@ -1,4 +1,4 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
@@ -14,12 +14,12 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.OverScroller
 import androidx.core.animation.doOnEnd
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.domain.AppSorter
-import com.hexy.launcher.domain.HexCoordinate
-import com.hexy.launcher.domain.HexGridCalculator
-import com.hexy.launcher.util.ColorExtractor
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.domain.AppSorter
+import com.hexgrid.launcher.domain.HexCoordinate
+import com.hexgrid.launcher.domain.HexGridCalculator
+import com.hexgrid.launcher.util.ColorExtractor
+import com.hexgrid.launcher.util.SettingsManager
 import kotlin.math.cos
 import kotlin.math.sin
 

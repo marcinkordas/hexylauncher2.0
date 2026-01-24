@@ -1,4 +1,4 @@
-package com.hexy.launcher.util
+package com.hexgrid.launcher.util
 
 import android.content.Context
 

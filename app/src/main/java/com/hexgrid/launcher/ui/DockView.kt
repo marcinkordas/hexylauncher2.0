@@ -1,4 +1,4 @@
-package com.hexy.launcher.ui
+package com.hexgrid.launcher.ui
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -23,9 +23,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import com.hexy.launcher.R
-import com.hexy.launcher.data.AppInfo
-import com.hexy.launcher.util.SettingsManager
+import com.hexgrid.launcher.R
+import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.util.SettingsManager
 
 /**
  * Dock bar with pinned apps, search icon, and settings button.

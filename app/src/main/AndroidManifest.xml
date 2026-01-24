@@ -11,12 +11,12 @@
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <application
-        android:name=".HexyLauncherApp"
+        android:name=".HexGridLauncherApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.HexyLauncher">
+        android:theme="@style/Theme.HexGridLauncher">
 
         <activity
             android:name=".MainActivity"
