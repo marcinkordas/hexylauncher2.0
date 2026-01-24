@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hexy Launcher</string>
+    <string name="app_name">HexGrid Launcher</string>
     <string name="pref_category_appearance">Appearance</string>
     <string name="pref_show_labels_title">Show app labels</string>
     <string name="pref_show_labels_summary">Display the name of the app below the icon</string>

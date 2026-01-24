@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
+    <!-- Color will be applied programmatically with transparency -->
     <solid android:color="#E8FFFFFF" />
-    <corners android:radius="24dp" />
+    <!-- 999dp creates perfect pill/stadium shape (circular ends) like One UI 8 -->
+    <corners android:radius="999dp" />
 </shape>

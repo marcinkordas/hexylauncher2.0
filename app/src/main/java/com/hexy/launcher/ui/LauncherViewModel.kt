@@ -18,6 +18,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _apps = MutableLiveData<List<AppInfo>>()
     val apps: LiveData<List<AppInfo>> = _apps
     
+    // All apps (unfiltered) for dock operations
+    private val _allApps = MutableLiveData<List<AppInfo>>()
+    val allApps: LiveData<List<AppInfo>> = _allApps
+    
     // Cached full list to restore after filtering
     private var allInstalledApps: List<AppInfo> = emptyList()
     
@@ -36,6 +40,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             _hiddenApps.addAll(SettingsManager.getHiddenApps(getApplication()))
             
             allInstalledApps = repository.loadInstalledApps()
+            // Emit full list for dock (includes hidden for lookup)
+            _allApps.value = allInstalledApps
             updateAppList(allInstalledApps)
         }
     }

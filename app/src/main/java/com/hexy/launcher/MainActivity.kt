@@ -1,11 +1,10 @@
 package com.hexy.launcher
 
 import android.app.AlertDialog
-import android.content.ClipData
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.EditText
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.hexy.launcher.databinding.ActivityMainBinding
@@ -28,6 +27,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.setActivityContext(this)
         setupGrid()
         setupDock()
+        setupBackHandler()
         
         viewModel.loadApps()
     }
@@ -35,8 +35,32 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            // Exit search mode if active when user presses home
+            val dock = getCurrentDock()
+            if (dock.isInSearchMode()) {
+                dock.exitSearchMode()
+            }
             binding.hexGrid.animateToOrigin()
         }
+    }
+    
+    private fun setupBackHandler() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val dock = getCurrentDock()
+                if (dock.isInSearchMode()) {
+                    dock.exitSearchMode()
+                } else {
+                    // Scroll back to center
+                    binding.hexGrid.animateToOrigin()
+                }
+            }
+        })
+    }
+    
+    private fun getCurrentDock() = when (SettingsManager.getSearchPosition(this)) {
+        SettingsManager.SearchPosition.TOP -> binding.dockTop
+        else -> binding.dockBottom
     }
     
     private fun setupDock() {
@@ -53,10 +77,19 @@ class MainActivity : AppCompatActivity() {
         }
         dock.visibility = View.VISIBLE
         
-        // Setup callbacks
-        dock.onSearchClick = { showSearchDialog() }
+        // Setup callbacks - inline search with live filtering
+        dock.onSearchTextChanged = { query ->
+            viewModel.filterApps(query)
+        }
         dock.onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
-        dock.onAppClick = { app -> viewModel.launchApp(app) }
+        dock.onAppClick = { app -> 
+            // If user taps on HexGrid Launcher itself, open settings
+            if (app.packageName == packageName) {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            } else {
+                viewModel.launchApp(app) 
+            }
+        }
         dock.onAppLongClick = { app -> 
             AlertDialog.Builder(this)
                 .setTitle(app.label)
@@ -65,47 +98,35 @@ class MainActivity : AppCompatActivity() {
                 }
                 .show()
         }
-    }
-    
-    private fun showSearchDialog() {
-        val editText = EditText(this).apply {
-            hint = "Search apps..."
-            setPadding(48, 32, 48, 32)
-        }
         
-        AlertDialog.Builder(this)
-            .setTitle("Search")
-            .setView(editText)
-            .setPositiveButton("Search") { dialog, _ ->
-                val query = editText.text.toString()
-                if (query.isNotBlank()) {
-                    viewModel.filterApps(query)
-                }
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                viewModel.filterApps("") // Reset filter
-                dialog.dismiss()
-            }
-            .show()
+        // Refresh dock settings (transparency, etc.)
+        dock.refreshSettings()
     }
 
     private fun setupGrid() {
         binding.hexGrid.setOnAppClick { app ->
-            viewModel.launchApp(app)
+            // If user taps on HexGrid Launcher itself, open settings
+            if (app.packageName == packageName) {
+                startActivity(Intent(this, SettingsActivity::class.java))
+            } else {
+                viewModel.launchApp(app)
+            }
         }
 
         binding.hexGrid.setOnAppLongClick { app, _, _ ->
             showContextMenu(app)
         }
 
+        // Observe filtered apps for display in grid
         viewModel.apps.observe(this) { apps ->
-            allApps = apps
             binding.hexGrid.setApps(apps)
-            
-            // Load dock apps once we have the full list
-            val position = SettingsManager.getSearchPosition(this)
-            val dock = if (position == SettingsManager.SearchPosition.TOP) binding.dockTop else binding.dockBottom
+        }
+        
+        // Observe ALL apps (unfiltered) for dock operations
+        viewModel.allApps.observe(this) { apps ->
+            allApps = apps
+            // Load dock apps using the full unfiltered list
+            val dock = getCurrentDock()
             dock.loadDockApps(apps)
         }
     }
@@ -116,8 +137,7 @@ class MainActivity : AppCompatActivity() {
             .setItems(arrayOf("Pin to Dock", "Hide App", "App Info", "Uninstall")) { _, which ->
                 when (which) {
                     0 -> {
-                        val position = SettingsManager.getSearchPosition(this)
-                        val dock = if (position == SettingsManager.SearchPosition.TOP) binding.dockTop else binding.dockBottom
+                        val dock = getCurrentDock()
                         dock.addApp(app)
                     }
                     1 -> viewModel.hideApp(app)

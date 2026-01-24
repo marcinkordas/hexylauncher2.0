@@ -21,6 +21,8 @@ object SettingsManager {
     private const val KEY_DIM_STATUS_BAR = "dim_status_bar"
     private const val KEY_DARK_THEME = "dark_theme"
     private const val KEY_UNIFIED_BUCKET_COLORS = "unified_bucket_colors"
+    private const val KEY_TILE_TRANSPARENCY = "tile_transparency"
+    private const val KEY_DOCK_TRANSPARENCY = "dock_transparency"
     
     // Default values
     const val DEFAULT_HEX_RADIUS = 96f
@@ -35,6 +37,8 @@ object SettingsManager {
     const val DEFAULT_DIM_STATUS_BAR = true
     const val DEFAULT_DARK_THEME = true
     const val DEFAULT_UNIFIED_BUCKET_COLORS = false
+    const val DEFAULT_TILE_TRANSPARENCY = 50  // 0-100 (50% = current behavior)
+    const val DEFAULT_DOCK_TRANSPARENCY = 90  // 0-100 (90% = mostly opaque)
     
     // Min/Max ranges
     const val MIN_HEX_RADIUS = 50f
@@ -180,5 +184,17 @@ object SettingsManager {
     fun getDockApps(context: Context): Set<String> = getPrefs(context).getStringSet(KEY_DOCK_APPS, emptySet()) ?: emptySet()
     fun setDockApps(context: Context, dockApps: Set<String>) {
         getPrefs(context).edit().putStringSet(KEY_DOCK_APPS, dockApps).apply()
+    }
+    
+    // Tile Transparency (0-100, where 100 is fully opaque)
+    fun getTileTransparency(context: Context): Int = getPrefs(context).getInt(KEY_TILE_TRANSPARENCY, DEFAULT_TILE_TRANSPARENCY)
+    fun setTileTransparency(context: Context, value: Int) {
+        getPrefs(context).edit().putInt(KEY_TILE_TRANSPARENCY, value.coerceIn(0, 100)).apply()
+    }
+    
+    // Dock Transparency (0-100, where 100 is fully opaque)
+    fun getDockTransparency(context: Context): Int = getPrefs(context).getInt(KEY_DOCK_TRANSPARENCY, DEFAULT_DOCK_TRANSPARENCY)
+    fun setDockTransparency(context: Context, value: Int) {
+        getPrefs(context).edit().putInt(KEY_DOCK_TRANSPARENCY, value.coerceIn(0, 100)).apply()
     }
 }

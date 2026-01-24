@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.graphics.drawable.Drawable
 import android.os.Build
 import com.hexy.launcher.util.ColorExtractor
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +48,10 @@ class AppRepository(private val context: Context) {
             try {
                 val packageName = ri.activityInfo.packageName
                 val label = ri.loadLabel(packageManager).toString()
-                val icon = ri.loadIcon(packageManager)
+                val icon: Drawable = ri.loadIcon(packageManager)
+                // Note: System clock apps typically have their own dynamic icons
+                // that update automatically - no need to wrap them
+                
                 val (dominantColor, bucket) = ColorExtractor.extractColor(icon, packageName)
                 val stats = usageStats[packageName]
 

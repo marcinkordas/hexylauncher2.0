@@ -41,6 +41,7 @@ class HexagonalGridView @JvmOverloads constructor(
     private var outlineWidth = 1.5f
     private var unifiedBucketColors = false
     private var cornerRadius = 0f
+    private var tileTransparency = 50 // 0-100
     
     private var offsetX = 0f
     private var offsetY = 0f
@@ -157,6 +158,7 @@ class HexagonalGridView @JvmOverloads constructor(
         outlineWidth = SettingsManager.getOutlineWidth(context)
         unifiedBucketColors = SettingsManager.getUnifiedBucketColors(context)
         cornerRadius = SettingsManager.getCornerRadius(context)
+        tileTransparency = SettingsManager.getTileTransparency(context)
         
         // Apply corner rounding effect to paints
         val cornerEffect = if (cornerRadius > 0) android.graphics.CornerPathEffect(cornerRadius) else null
@@ -372,7 +374,9 @@ class HexagonalGridView @JvmOverloads constructor(
     }
     
     private fun drawInnerHexagon(canvas: Canvas, brightness: Float) {
-        whitePaint.alpha = (70 + brightness * 50).toInt()
+        // Use tileTransparency (0-100) to control base alpha
+        val baseAlpha = (tileTransparency * 2.55 * 0.5).toInt() // Max ~127 at 100%
+        whitePaint.alpha = (baseAlpha + brightness * 50).toInt().coerceIn(0, 255)
         
         // Always draw fill using fillPath (which handles gap if needed)
         canvas.drawPath(fillPath, whitePaint)
@@ -388,7 +392,9 @@ class HexagonalGridView @JvmOverloads constructor(
     
     private fun drawHexagonAtOrigin(canvas: Canvas, color: Int, brightness: Float) {
         hexPaint.color = color
-        hexPaint.alpha = (50 + brightness * 80).toInt()
+        // Use tileTransparency (0-100) to control base alpha
+        val baseAlpha = (tileTransparency * 2.55 * 0.5).toInt() // Max ~127 at 100%
+        hexPaint.alpha = (baseAlpha + brightness * 80).toInt().coerceIn(0, 255)
         hexPaint.style = Paint.Style.FILL
         
         // Draw fill using fillPath

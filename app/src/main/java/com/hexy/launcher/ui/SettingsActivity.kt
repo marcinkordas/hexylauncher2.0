@@ -1,21 +1,43 @@
 package com.hexy.launcher.ui
 
-import android.content.ComponentName
+import android.app.role.RoleManager
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.hexy.launcher.MainActivity
 import com.hexy.launcher.databinding.ActivitySettingsBinding
+import com.hexy.launcher.util.SettingsExporter
 import com.hexy.launcher.util.SettingsManager
 
 class SettingsActivity : AppCompatActivity() {
     
+    companion object {
+        private const val REQUEST_CODE_SET_DEFAULT_LAUNCHER = 1001
+    }
+    
     private lateinit var binding: ActivitySettingsBinding
+    
+    // File picker for export
+    private val exportLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { exportSettingsToUri(it) }
+    }
+    
+    // File picker for import
+    private val importLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { importSettingsFromUri(it) }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,8 +49,10 @@ class SettingsActivity : AppCompatActivity() {
         
         setupSpinners()
         setupSeekBars()
+        setupTransparencySliders()
         setupToggles()
         setupPermissions()
+        setupBackupRestore()
     }
     
     private fun setupSpinners() {
@@ -119,14 +143,102 @@ class SettingsActivity : AppCompatActivity() {
         }
         
         binding.btnSetDefaultLauncher.setOnClickListener {
-            val intent = Intent(Intent.ACTION_MAIN)
-            intent.addCategory(Intent.CATEGORY_HOME)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10+ uses RoleManager for proper launcher selection
+                val roleManager = getSystemService(RoleManager::class.java)
+                if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
+                    @Suppress("DEPRECATION")
+                    startActivityForResult(intent, REQUEST_CODE_SET_DEFAULT_LAUNCHER)
+                }
+            } else {
+                // Older Android: Open default apps settings
+                try {
+                    val intent = Intent(Settings.ACTION_HOME_SETTINGS)
+                    startActivity(intent)
+                } catch (e: Exception) {
+                    // Ultimate fallback to general settings
+                    val intent = Intent(Settings.ACTION_SETTINGS)
+                    startActivity(intent)
+                }
+            }
         }
         
         binding.btnManageApps.setOnClickListener {
             startActivity(Intent(this, AppVisibilityActivity::class.java))
+        }
+    }
+    
+    private fun setupTransparencySliders() {
+        // Tile Transparency (0-100)
+        val currentTile = SettingsManager.getTileTransparency(this)
+        binding.seekBarTileTransparency.progress = currentTile
+        binding.textTileTransparencyValue.text = "$currentTile%"
+        binding.seekBarTileTransparency.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                binding.textTileTransparencyValue.text = "$progress%"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                SettingsManager.setTileTransparency(this@SettingsActivity, seekBar?.progress ?: 50)
+            }
+        })
+        
+        // Dock Transparency (0-100)
+        val currentDock = SettingsManager.getDockTransparency(this)
+        binding.seekBarDockTransparency.progress = currentDock
+        binding.textDockTransparencyValue.text = "$currentDock%"
+        binding.seekBarDockTransparency.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                binding.textDockTransparencyValue.text = "$progress%"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                SettingsManager.setDockTransparency(this@SettingsActivity, seekBar?.progress ?: 90)
+            }
+        })
+    }
+    
+    private fun setupBackupRestore() {
+        binding.btnExportSettings.setOnClickListener {
+            val filename = SettingsExporter.getSuggestedFilename()
+            exportLauncher.launch(filename)
+        }
+        
+        binding.btnImportSettings.setOnClickListener {
+            importLauncher.launch(arrayOf("application/json", "*/*"))
+        }
+    }
+    
+    private fun exportSettingsToUri(uri: Uri) {
+        try {
+            val json = SettingsExporter.exportToJson(this)
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(json.toByteArray())
+            }
+            Toast.makeText(this, "Settings exported successfully", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    private fun importSettingsFromUri(uri: Uri) {
+        try {
+            val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
+            val result = SettingsExporter.importFromJson(this, json)
+            
+            result.fold(
+                onSuccess = { count ->
+                    Toast.makeText(this, "Imported $count settings", Toast.LENGTH_SHORT).show()
+                    // Refresh UI to reflect imported settings
+                    recreate()
+                },
+                onFailure = { error ->
+                    Toast.makeText(this, "Import failed: ${error.message}", Toast.LENGTH_LONG).show()
+                }
+            )
+        } catch (e: Exception) {
+            Toast.makeText(this, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
