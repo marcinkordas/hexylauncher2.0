@@ -26,7 +26,7 @@ class AppRepository(private val context: Context) {
             return@withContext cache.map { app ->
                 val key = if (app.isShortcut && app.shortcutId != null) "${app.packageName}_${app.shortcutId}" else app.packageName
                 val stats = usageStats[key]
-                val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(app.packageName)
+                val notifCount = com.hexgrid.launcher.service.NotificationListener.getNotificationCount(app.packageName)
                 app.copy(
                     usageCount = stats?.first ?: 0L,
                     lastUsedTimestamp = stats?.second ?: 0L,
@@ -55,7 +55,7 @@ class AppRepository(private val context: Context) {
                 val (dominantColor, bucket) = ColorExtractor.extractColor(icon, packageName)
                 val stats = usageStats[packageName]
 
-                val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(packageName)
+                val notifCount = com.hexgrid.launcher.service.NotificationListener.getNotificationCount(packageName)
 
                 AppInfo(
                     packageName = packageName,
@@ -90,7 +90,7 @@ class AppRepository(private val context: Context) {
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
                         val stats = usageStats[shortcutKey]
 
-                        val notifCount = com.hexy.launcher.service.NotificationListener.getNotificationCount(shortcut.`package`)
+                        val notifCount = com.hexgrid.launcher.service.NotificationListener.getNotificationCount(shortcut.`package`)
                         
                         AppInfo(
                             packageName = shortcut.`package`,
