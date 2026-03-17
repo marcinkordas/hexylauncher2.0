@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/imgWidgetIcon"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/textWidgetName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:textColor="@android:color/white"
+        android:textSize="16sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRemoveWidget"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Remove"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>
