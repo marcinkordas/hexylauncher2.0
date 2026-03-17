@@ -80,6 +80,7 @@ class HexagonalGridView @JvmOverloads constructor(
     }
     
     private var animationProgress = 1f
+    private var initialLoadDone = false
     private var animator: ValueAnimator? = null
     private var centerAnimator: ValueAnimator? = null
     
@@ -189,12 +190,11 @@ class HexagonalGridView @JvmOverloads constructor(
             apps = appList
             hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5))
             updateScrollBounds()
-            if (centerOnChange) {
-                // Skip pop-in animation during search — just scroll to center smoothly.
-                // Two concurrent animators on different properties would look jarring.
-                animateToOrigin()
-            } else {
-                startRadialAnimation()
+            invalidate() // Always redraw — prevents freeze when already at center (animateToOrigin early-returns)
+            when {
+                centerOnChange -> animateToOrigin()
+                !initialLoadDone -> { startRadialAnimation(); initialLoadDone = true }
+                else -> animateToOrigin() // clear search / install / uninstall: scroll to center, no pop-in flash
             }
         }
     }
@@ -418,22 +418,37 @@ class HexagonalGridView @JvmOverloads constructor(
     private fun drawIconAtOrigin(canvas: Canvas, app: AppInfo, yOffset: Float) {
         val baseIconSize = hexRadius * 1.1f
         val maxSize = (baseIconSize * iconSizeMultiplier - iconPadding * 2).toInt()
-        
+
         // Preserve aspect ratio
         val intrinsicW = app.icon.intrinsicWidth
         val intrinsicH = app.icon.intrinsicHeight
-        
+
         val scale = if (intrinsicW > 0 && intrinsicH > 0) {
             minOf(maxSize.toFloat() / intrinsicW, maxSize.toFloat() / intrinsicH)
         } else 1f
-        
+
         val width = (intrinsicW * scale).toInt().coerceAtLeast(1)
         val height = (intrinsicH * scale).toInt().coerceAtLeast(1)
         val halfW = width / 2
         val halfH = height / 2
-        
+
         app.icon.setBounds(-halfW, -halfH + yOffset.toInt(), halfW, halfH + yOffset.toInt())
-        app.icon.draw(canvas)
+
+        if (app.isShortcut) {
+            // Shortcut icons (PWA etc.) are raw bitmaps — clip to squircle matching Samsung's icon shape
+            val cornerRadius = maxSize * 0.3f
+            canvas.save()
+            val clipPath = Path()
+            clipPath.addRoundRect(
+                -halfW.toFloat(), -halfH + yOffset, halfW.toFloat(), halfH + yOffset,
+                cornerRadius, cornerRadius, Path.Direction.CW
+            )
+            canvas.clipPath(clipPath)
+            app.icon.draw(canvas)
+            canvas.restore()
+        } else {
+            app.icon.draw(canvas)
+        }
     }
     
     private fun drawLabelAt(canvas: Canvas, x: Float, y: Float, label: String) {
