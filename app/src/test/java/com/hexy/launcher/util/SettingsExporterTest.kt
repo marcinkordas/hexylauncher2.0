@@ -3,10 +3,13 @@ package com.hexgrid.launcher.util
 import org.junit.Assert.*
 import org.junit.Test
 import org.json.JSONObject
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Unit tests for SettingsExporter JSON export/import
  */
+@RunWith(RobolectricTestRunner::class)
 class SettingsExporterTest {
 
     @Test

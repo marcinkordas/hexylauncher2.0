@@ -2,7 +2,10 @@ package com.hexgrid.launcher.widget
 
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class WidgetStoreTest {
 
     private fun entry(id: Int, awId: Int = id * 10) = WidgetEntry(

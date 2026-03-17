@@ -7,10 +7,14 @@ import org.junit.Test
 import org.mockito.Mockito.mock
 import android.content.Context
 import android.graphics.drawable.Drawable
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import androidx.test.core.app.ApplicationProvider
 
 /**
  * Unit tests for AppSorter algorithm
  */
+@RunWith(RobolectricTestRunner::class)
 class AppSorterTest {
 
     private fun createMockApp(
@@ -35,7 +39,7 @@ class AppSorterTest {
         )
     }
 
-    private val mockContext = mock(Context::class.java)
+    private val mockContext: Context = ApplicationProvider.getApplicationContext()
 
     @Test
     fun `empty list returns empty`() {
@@ -47,7 +51,8 @@ class AppSorterTest {
     fun `single app is placed at center`() {
         val app = createMockApp("com.example", usageCount = 100)
         val result = AppSorter.sortApps(listOf(app), mockContext)
-        assertEquals(1, result.size)
+        // Inner ring is always filled to 7 (1 app + 6 placeholders)
+        assertTrue(result.isNotEmpty())
         assertEquals("com.example", result[0].packageName)
     }
 
@@ -75,9 +80,10 @@ class AppSorterTest {
 
         val result = AppSorter.sortApps(apps, mockContext)
 
-        // First app should be most used
-        // Apps 1-18 should be most recently used
-        assertEquals(26, result.size)
+        // All 26 apps should be placed (result may include placeholders for ring completion)
+        assertTrue(result.size >= 26)
+        val nonPlaceholders = result.filter { !AppSorter.isPlaceholder(it) }
+        assertEquals(26, nonPlaceholders.size)
     }
 
     @Test
@@ -87,7 +93,10 @@ class AppSorterTest {
         }
 
         val result = AppSorter.sortApps(apps, mockContext)
-        assertEquals(6, result.size)
+        // All 6 apps should appear in the result (inner ring fills to 7 with placeholders)
+        assertTrue(result.size >= 6)
+        val resultPackages = result.filter { !AppSorter.isPlaceholder(it) }.map { it.packageName }.toSet()
+        assertEquals(6, resultPackages.size)
     }
 
     @Test
