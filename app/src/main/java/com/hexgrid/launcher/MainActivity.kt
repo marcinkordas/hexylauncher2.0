@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity() {
         val pkgFilter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
-            addAction(Intent.ACTION_PACKAGE_REPLACED)
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, pkgFilter)

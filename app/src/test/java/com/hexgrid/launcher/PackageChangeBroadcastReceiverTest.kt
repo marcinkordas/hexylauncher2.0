@@ -43,4 +43,10 @@ class PackageChangeBroadcastReceiverTest {
     fun `package replaced is ignored to avoid duplicate reload`() {
         assertFalse(shouldReload(Intent.ACTION_PACKAGE_REPLACED, isReplacing = false))
     }
+
+    @Test
+    fun `unknown action does not trigger reload`() {
+        assertFalse(shouldReload(null, false))
+        assertFalse(shouldReload("com.example.CUSTOM_ACTION", false))
+    }
 }
