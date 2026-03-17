@@ -184,12 +184,18 @@ class HexagonalGridView @JvmOverloads constructor(
         invalidate()
     }
     
-    fun setApps(appList: List<AppInfo>) {
+    fun setApps(appList: List<AppInfo>, centerOnChange: Boolean = false) {
         if (apps != appList) {
             apps = appList
             hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5))
             updateScrollBounds()
-            startRadialAnimation()
+            if (centerOnChange) {
+                // Skip pop-in animation during search — just scroll to center smoothly.
+                // Two concurrent animators on different properties would look jarring.
+                animateToOrigin()
+            } else {
+                startRadialAnimation()
+            }
         }
     }
     

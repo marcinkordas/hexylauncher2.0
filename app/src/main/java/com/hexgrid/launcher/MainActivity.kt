@@ -176,8 +176,10 @@ class MainActivity : AppCompatActivity() {
             showContextMenu(app)
         }
 
+        // centerOnChange = true when a search query is active — grid animates to center
         viewModel.apps.observe(this) { apps ->
-            binding.hexGrid.setApps(apps)
+            val isFiltering = viewModel.currentQuery.isNotBlank()
+            binding.hexGrid.setApps(apps, centerOnChange = isFiltering)
         }
 
         viewModel.allApps.observe(this) { apps ->
