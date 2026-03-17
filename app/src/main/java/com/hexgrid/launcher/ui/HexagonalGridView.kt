@@ -94,7 +94,33 @@ class HexagonalGridView @JvmOverloads constructor(
     
     private var onAppClickListener: ((AppInfo) -> Unit)? = null
     private var onAppLongClickListener: ((AppInfo, Float, Float) -> Unit)? = null
-    
+
+    // Widget support — scroll sync
+    var onScrollChanged: ((offsetX: Float, offsetY: Float) -> Unit)? = null
+
+    // Widget support — occupied cells (positions to skip when laying out app icons)
+    private var occupiedCells: Set<HexCoordinate> = emptySet()
+
+    // Widget support — placement mode
+    private var isPlacementMode = false
+    private var placementPreviewHex: HexCoordinate? = null
+    private var pendingWidgetWidthPx = 0
+    private var pendingWidgetHeightPx = 0
+    var onPlacementConfirmed: ((HexCoordinate) -> Unit)? = null
+    var onPlacementCancelled: (() -> Unit)? = null
+
+    val isInPlacementMode: Boolean get() = isPlacementMode
+
+    private val placementPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#8064C8FF")
+        style = Paint.Style.FILL
+    }
+    private val placementStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#FF64C8FF")
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+
     private val gestureDetector = GestureDetector(context, GestureListener())
     
     init {
@@ -180,7 +206,7 @@ class HexagonalGridView @JvmOverloads constructor(
     fun refreshSettings() {
         loadSettings()
         // Regenerate spiral to match new calculator settings if needed
-        hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5))
+        hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5), occupiedCells)
         updateScrollBounds()
         invalidate()
     }
@@ -188,7 +214,7 @@ class HexagonalGridView @JvmOverloads constructor(
     fun setApps(appList: List<AppInfo>, centerOnChange: Boolean = false) {
         if (apps != appList) {
             apps = appList
-            hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5))
+            hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5), occupiedCells)
             updateScrollBounds()
             invalidate() // Always redraw — prevents freeze when already at center (animateToOrigin early-returns)
             when {
@@ -202,6 +228,7 @@ class HexagonalGridView @JvmOverloads constructor(
     fun scrollToOrigin() {
         offsetX = 0f
         offsetY = 0f
+        onScrollChanged?.invoke(0f, 0f)
         invalidate()
     }
     
@@ -222,6 +249,7 @@ class HexagonalGridView @JvmOverloads constructor(
             addUpdateListener { anim ->
                 offsetX = anim.getAnimatedValue("x") as Float
                 offsetY = anim.getAnimatedValue("y") as Float
+                onScrollChanged?.invoke(offsetX, offsetY)
                 invalidate()
             }
             start()
@@ -272,12 +300,34 @@ class HexagonalGridView @JvmOverloads constructor(
     fun setOnAppLongClick(listener: (AppInfo, Float, Float) -> Unit) {
         onAppLongClickListener = listener
     }
-    
+
+    fun setOccupiedCells(cells: Set<HexCoordinate>) {
+        occupiedCells = cells
+        hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5), occupiedCells)
+        updateScrollBounds()
+        invalidate()
+    }
+
+    fun enterPlacementMode(widthPx: Int, heightPx: Int) {
+        isPlacementMode = true
+        pendingWidgetWidthPx = widthPx
+        pendingWidgetHeightPx = heightPx
+        placementPreviewHex = HexCoordinate.ORIGIN
+        invalidate()
+    }
+
+    fun exitPlacementMode() {
+        isPlacementMode = false
+        placementPreviewHex = null
+        invalidate()
+    }
+
     override fun computeScroll() {
         super.computeScroll()
         if (scroller.computeScrollOffset()) {
             offsetX = scroller.currX.toFloat().coerceIn(minOffsetX, maxOffsetX)
             offsetY = scroller.currY.toFloat().coerceIn(minOffsetY, maxOffsetY)
+            onScrollChanged?.invoke(offsetX, offsetY)
             invalidate()
         }
     }
@@ -343,6 +393,22 @@ class HexagonalGridView @JvmOverloads constructor(
                 }
             }
         }
+
+        if (isPlacementMode) {
+            drawPlacementOverlay(canvas)
+        }
+    }
+
+    private fun drawPlacementOverlay(canvas: Canvas) {
+        val previewHex = placementPreviewHex ?: return
+        val centerX = width / 2f + offsetX
+        val centerY = height / 2f + offsetY
+        val pos = calculator.hexToPixel(previewHex, centerX, centerY)
+        val halfW = pendingWidgetWidthPx / 2f
+        val halfH = pendingWidgetHeightPx / 2f
+        val rect = RectF(pos.x - halfW, pos.y - halfH, pos.x + halfW, pos.y + halfH)
+        canvas.drawRoundRect(rect, 12f, 12f, placementPaint)
+        canvas.drawRoundRect(rect, 12f, 12f, placementStrokePaint)
     }
     
     private fun drawNotificationGlows(canvas: Canvas, centerX: Float, centerY: Float) {
@@ -443,6 +509,24 @@ class HexagonalGridView @JvmOverloads constructor(
     }
     
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (isPlacementMode) {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                    val centerX = width / 2f + offsetX
+                    val centerY = height / 2f + offsetY
+                    placementPreviewHex = calculator.pixelToHex(event.x, event.y, centerX, centerY)
+                    invalidate()
+                    return true
+                }
+                MotionEvent.ACTION_UP -> {
+                    placementPreviewHex?.let { hex ->
+                        if (hex !in occupiedCells) onPlacementConfirmed?.invoke(hex)
+                    }
+                    return true
+                }
+            }
+            return true
+        }
         if (event.action == MotionEvent.ACTION_DOWN) {
             scroller.forceFinished(true)
             centerAnimator?.cancel()
@@ -490,6 +574,7 @@ class HexagonalGridView @JvmOverloads constructor(
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
             offsetX = (offsetX - dx).coerceIn(minOffsetX, maxOffsetX)
             offsetY = (offsetY - dy).coerceIn(minOffsetY, maxOffsetY)
+            onScrollChanged?.invoke(offsetX, offsetY)
             invalidate()
             return true
         }
