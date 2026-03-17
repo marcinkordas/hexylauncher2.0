@@ -218,7 +218,7 @@ object SettingsManager {
     // Returns corner radius ratio for the current shape (0 = square, 0.5 = circle, 0.3 = squircle)
     fun getShortcutIconCornerRadiusRatio(context: Context): Float = when (getShortcutIconShape(context)) {
         ShortcutIconShape.SQUARE -> 0f
-        ShortcutIconShape.SQUIRCLE -> 0.3f
+        ShortcutIconShape.SQUIRCLE -> 0.4f
         ShortcutIconShape.CIRCLE -> 0.5f
     }
 
