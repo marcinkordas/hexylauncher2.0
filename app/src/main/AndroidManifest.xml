@@ -9,6 +9,7 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
 
     <application
         android:name=".HexGridLauncherApp"
@@ -51,6 +52,11 @@
                 <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.WidgetManagementActivity"
+            android:exported="false"
+            android:label="Manage Widgets" />
 
         <!-- Notification Listener Service -->
         <service
