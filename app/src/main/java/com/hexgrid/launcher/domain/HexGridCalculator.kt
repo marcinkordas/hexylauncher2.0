@@ -110,10 +110,15 @@ class HexGridCalculator(
     }
     
     /**
-     * Legacy method for compatibility.
+     * Returns hex coordinates in spiral order, optionally skipping occupied cells.
+     * HexagonalGridView uses this to route app icons around widget areas.
      */
-    fun generateSpiralCoordinates(maxRings: Int): List<HexCoordinate> {
-        return generateWindmillSpiral(maxRings).map { it.first }
+    fun generateSpiralCoordinates(
+        maxRings: Int,
+        occupiedCells: Set<HexCoordinate> = emptySet()
+    ): List<HexCoordinate> {
+        val all = generateWindmillSpiral(maxRings).map { it.first }
+        return if (occupiedCells.isEmpty()) all else all.filter { it !in occupiedCells }
     }
     
     private fun axialRound(q: Float, r: Float): HexCoordinate {
