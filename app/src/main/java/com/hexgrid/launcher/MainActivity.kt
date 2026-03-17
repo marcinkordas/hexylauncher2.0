@@ -1,6 +1,8 @@
 package com.hexgrid.launcher
 
+import android.animation.ValueAnimator
 import android.app.AlertDialog
+import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,6 +12,7 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
+import android.os.Build
 import android.os.UserHandle
 import android.view.View
 import android.os.Bundle
@@ -17,31 +20,46 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.hexgrid.launcher.databinding.ActivityMainBinding
+import com.hexgrid.launcher.domain.HexCoordinate
+import com.hexgrid.launcher.domain.HexGridCalculator
 import com.hexgrid.launcher.ui.LauncherViewModel
 import com.hexgrid.launcher.data.AppInfo
 import com.hexgrid.launcher.ui.SettingsActivity
+import com.hexgrid.launcher.ui.WidgetManagementActivity
 import com.hexgrid.launcher.util.SettingsManager
+import com.hexgrid.launcher.widget.WidgetHost
+import com.hexgrid.launcher.widget.WidgetManager
+import com.hexgrid.launcher.widget.WidgetStore
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val EXTRA_PLACEMENT_WIDGET_ID = "extra_placement_widget_id"
+    }
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: LauncherViewModel by viewModels()
     private var allApps: List<AppInfo> = emptyList()
     private lateinit var launcherAppsService: LauncherApps
 
-    // ── Package change receiver (install / uninstall safety net) ──────────────
+    private lateinit var widgetHost: WidgetHost
+    private lateinit var widgetStore: WidgetStore
+    private lateinit var widgetManager: WidgetManager
+
+    private var widgetFadeAnimator: ValueAnimator? = null
+
+    // ── Package change receiver ───────────────────────────────────────────────
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val isReplacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
             when (intent.action) {
                 Intent.ACTION_PACKAGE_REMOVED -> if (!isReplacing) viewModel.reloadApps()
                 Intent.ACTION_PACKAGE_ADDED -> viewModel.reloadApps()
-                // ACTION_PACKAGE_REPLACED skipped — PACKAGE_ADDED already handles it
             }
         }
     }
 
-    // ── Legacy shortcut receiver (Vivaldi and other browsers that don't use requestPinShortcut) ──
+    // ── Legacy shortcut receiver ──────────────────────────────────────────────
     @Suppress("DEPRECATION")
     private val installShortcutReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -49,47 +67,40 @@ class MainActivity : AppCompatActivity() {
             val name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME) ?: return
             val launchIntent = intent.getParcelableExtra<Intent>(Intent.EXTRA_SHORTCUT_INTENT) ?: return
             if (launchIntent.action == null) launchIntent.action = Intent.ACTION_VIEW
-
             val shortcutManager = getSystemService(ShortcutManager::class.java)
             val builder = ShortcutInfo.Builder(context, "legacy_${System.currentTimeMillis()}")
                 .setShortLabel(name)
                 .setIntent(launchIntent)
-
             val iconBitmap = intent.getParcelableExtra<Bitmap>(Intent.EXTRA_SHORTCUT_ICON)
-            if (iconBitmap != null) {
-                builder.setIcon(Icon.createWithBitmap(iconBitmap))
-            }
-
-            try {
-                shortcutManager.requestPinShortcut(builder.build(), null)
-            } catch (_: Exception) { }
+            if (iconBitmap != null) builder.setIcon(Icon.createWithBitmap(iconBitmap))
+            try { shortcutManager.requestPinShortcut(builder.build(), null) } catch (_: Exception) { }
         }
     }
 
-    // ── LauncherApps.Callback (work profiles, shortcuts) ─────────────────────
+    // ── Widget removal broadcast from WidgetManagementActivity ────────────────
+    private val widgetRemovedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != WidgetManagementActivity.ACTION_WIDGET_REMOVED) return
+            val widgetId = intent.getIntExtra(WidgetManagementActivity.EXTRA_WIDGET_ID, -1)
+            if (widgetId != -1) {
+                widgetManager.remove(widgetId)
+                updateOccupiedCells()
+            }
+        }
+    }
+
+    // ── LauncherApps.Callback ─────────────────────────────────────────────────
     private val launcherAppsCallback = object : LauncherApps.Callback() {
-        override fun onPackageAdded(packageName: String, user: UserHandle) {
-            viewModel.reloadApps()
-        }
-        override fun onPackageRemoved(packageName: String, user: UserHandle) {
-            viewModel.reloadApps()
-        }
-        override fun onPackageChanged(packageName: String, user: UserHandle) {
-            viewModel.reloadApps()
-        }
-        override fun onPackagesAvailable(
-            packageNames: Array<String>, user: UserHandle, replacing: Boolean
-        ) {
+        override fun onPackageAdded(packageName: String, user: UserHandle) { viewModel.reloadApps() }
+        override fun onPackageRemoved(packageName: String, user: UserHandle) { viewModel.reloadApps() }
+        override fun onPackageChanged(packageName: String, user: UserHandle) { viewModel.reloadApps() }
+        override fun onPackagesAvailable(packageNames: Array<String>, user: UserHandle, replacing: Boolean) {
             viewModel.markAvailable(packageNames)
         }
-        override fun onPackagesUnavailable(
-            packageNames: Array<String>, user: UserHandle, replacing: Boolean
-        ) {
+        override fun onPackagesUnavailable(packageNames: Array<String>, user: UserHandle, replacing: Boolean) {
             viewModel.markUnavailable(packageNames)
         }
-        override fun onShortcutsChanged(
-            packageName: String, shortcuts: MutableList<ShortcutInfo>, user: UserHandle
-        ) {
+        override fun onShortcutsChanged(packageName: String, shortcuts: MutableList<ShortcutInfo>, user: UserHandle) {
             viewModel.reloadApps()
         }
     }
@@ -100,10 +111,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         viewModel.setActivityContext(this)
-
         launcherAppsService = getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
 
-        // Register listeners in onCreate so events are caught even while launcher is paused
+        // Register listeners
         launcherAppsService.registerCallback(launcherAppsCallback)
         val pkgFilter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
@@ -111,19 +121,60 @@ class MainActivity : AppCompatActivity() {
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, pkgFilter)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(installShortcutReceiver,
                 IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"), RECEIVER_EXPORTED)
+            registerReceiver(widgetRemovedReceiver,
+                IntentFilter(WidgetManagementActivity.ACTION_WIDGET_REMOVED), RECEIVER_NOT_EXPORTED)
         } else {
             registerReceiver(installShortcutReceiver,
                 IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"))
+            registerReceiver(widgetRemovedReceiver,
+                IntentFilter(WidgetManagementActivity.ACTION_WIDGET_REMOVED))
         }
+
+        // Widget setup
+        widgetHost = WidgetHost(this)
+        widgetStore = WidgetStore(this)
+        widgetManager = WidgetManager(
+            context = this,
+            host = widgetHost,
+            store = widgetStore,
+            container = binding.hexGridContainer,
+            hexCalculator = {
+                val r = SettingsManager.getHexRadius(this)
+                val o = when (SettingsManager.getHexOrientation(this)) {
+                    SettingsManager.HexOrientation.POINTY_TOP -> HexGridCalculator.Orientation.POINTY_TOP
+                    SettingsManager.HexOrientation.FLAT_TOP -> HexGridCalculator.Orientation.FLAT_TOP
+                }
+                HexGridCalculator(r, o)
+            },
+            containerWidth = { binding.hexGridContainer.width },
+            containerHeight = { binding.hexGridContainer.height }
+        )
 
         setupGrid()
         setupDock()
         setupBackHandler()
+        setupWidgetScrollSync()
+
+        widgetManager.restoreWidgets()
+        updateOccupiedCells()
 
         viewModel.loadApps()
+
+        // Handle placement intent if launched for widget placement
+        handlePlacementIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        widgetManager.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        widgetManager.stopListening()
     }
 
     override fun onDestroy() {
@@ -131,24 +182,63 @@ class MainActivity : AppCompatActivity() {
         launcherAppsService.unregisterCallback(launcherAppsCallback)
         unregisterReceiver(packageChangeReceiver)
         unregisterReceiver(installShortcutReceiver)
+        unregisterReceiver(widgetRemovedReceiver)
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
             val dock = getCurrentDock()
-            if (dock.isInSearchMode()) {
-                dock.exitSearchMode()
-            }
+            if (dock.isInSearchMode()) dock.exitSearchMode()
             binding.hexGrid.animateToOrigin()
         }
+        intent?.let { handlePlacementIntent(it) }
+    }
+
+    private fun handlePlacementIntent(intent: Intent?) {
+        val appWidgetId = intent?.getIntExtra(EXTRA_PLACEMENT_WIDGET_ID, -1) ?: -1
+        if (appWidgetId == -1) return
+        // Clear the extra so rotation doesn't re-trigger
+        intent?.removeExtra(EXTRA_PLACEMENT_WIDGET_ID)
+
+        val info = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId) ?: return
+        binding.hexGrid.enterPlacementMode(info.minWidth, info.minHeight)
+        binding.hexGrid.onPlacementConfirmed = { centerHex ->
+            binding.hexGrid.exitPlacementMode()
+            binding.hexGrid.onPlacementConfirmed = null
+            binding.hexGrid.onPlacementCancelled = null
+            widgetManager.confirmPlacement(appWidgetId, centerHex)
+            updateOccupiedCells()
+        }
+        binding.hexGrid.onPlacementCancelled = {
+            binding.hexGrid.exitPlacementMode()
+            binding.hexGrid.onPlacementConfirmed = null
+            binding.hexGrid.onPlacementCancelled = null
+            widgetHost.releaseId(appWidgetId)
+        }
+    }
+
+    private fun setupWidgetScrollSync() {
+        binding.hexGrid.onScrollChanged = { offsetX, offsetY ->
+            widgetManager.syncScroll(offsetX, offsetY)
+        }
+    }
+
+    private fun updateOccupiedCells() {
+        val cells = widgetManager.occupiedCells()
+        binding.hexGrid.setOccupiedCells(cells)
+        // Re-sort apps with new occupied cells
+        viewModel.loadApps()
     }
 
     private fun setupBackHandler() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 val dock = getCurrentDock()
-                if (dock.isInSearchMode()) {
+                if (binding.hexGrid.isInPlacementMode) {
+                    binding.hexGrid.exitPlacementMode()
+                    binding.hexGrid.onPlacementCancelled?.invoke()
+                } else if (dock.isInSearchMode()) {
                     dock.exitSearchMode()
                 } else {
                     binding.hexGrid.animateToOrigin()
@@ -164,7 +254,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupDock() {
         val position = SettingsManager.getSearchPosition(this)
-
         binding.dockTop.visibility = View.GONE
         binding.dockBottom.visibility = View.GONE
 
@@ -177,6 +266,7 @@ class MainActivity : AppCompatActivity() {
 
         dock.onSearchTextChanged = { query ->
             viewModel.filterApps(query)
+            animateWidgetVisibility(query.isBlank())
         }
         dock.onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
         dock.onAppClick = { app ->
@@ -189,13 +279,34 @@ class MainActivity : AppCompatActivity() {
         dock.onAppLongClick = { app ->
             AlertDialog.Builder(this)
                 .setTitle(app.label)
-                .setItems(arrayOf("Remove from Dock")) { _, _ ->
-                    dock.removeApp(app)
-                }
+                .setItems(arrayOf("Remove from Dock")) { _, _ -> dock.removeApp(app) }
                 .show()
         }
-
         dock.refreshSettings()
+    }
+
+    private fun animateWidgetVisibility(visible: Boolean) {
+        val showDuringSearch = SettingsManager.getShowWidgetsDuringSearch(this)
+        if (showDuringSearch) return  // always visible — no animation needed
+
+        val targetAlpha = if (visible) 1f else 0f
+        widgetFadeAnimator?.cancel()
+        widgetFadeAnimator = ValueAnimator.ofFloat(
+            widgetManager.loadedEntries()
+                .mapNotNull { binding.hexGridContainer.findViewWithTag<View>("widget_${it.widgetId}") }
+                .firstOrNull()?.alpha ?: (if (visible) 0f else 1f),
+            targetAlpha
+        ).apply {
+            duration = 200
+            addUpdateListener { anim ->
+                val alpha = anim.animatedValue as Float
+                for (i in 0 until binding.hexGridContainer.childCount) {
+                    val child = binding.hexGridContainer.getChildAt(i)
+                    if (child != binding.hexGrid) child.alpha = alpha
+                }
+            }
+            start()
+        }
     }
 
     private fun setupGrid() {
@@ -207,11 +318,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        binding.hexGrid.setOnAppLongClick { app, _, _ ->
-            showContextMenu(app)
-        }
+        binding.hexGrid.setOnAppLongClick { app, _, _ -> showContextMenu(app) }
 
-        // centerOnChange = true when a search query is active — grid animates to center
         viewModel.apps.observe(this) { apps ->
             val isFiltering = viewModel.currentQuery.isNotBlank()
             binding.hexGrid.setApps(apps, centerOnChange = isFiltering)
@@ -219,8 +327,7 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.allApps.observe(this) { apps ->
             allApps = apps
-            val dock = getCurrentDock()
-            dock.loadDockApps(apps)
+            getCurrentDock().loadDockApps(apps)
         }
     }
 
@@ -250,7 +357,6 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         binding.hexGrid.refreshSettings()
         setupDock()
-        // reloadApps() if icon shape was changed in settings (dirty flag cleared by AppRepository)
         if (SettingsManager.getIconCacheDirty(this)) {
             viewModel.reloadApps()
         } else {
