@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.hexgrid.launcher.databinding.ActivitySettingsBinding
+import com.hexgrid.launcher.ui.WidgetManagementActivity
 import com.hexgrid.launcher.util.SettingsExporter
 import com.hexgrid.launcher.util.SettingsManager
 
@@ -53,6 +54,7 @@ class SettingsActivity : AppCompatActivity() {
         setupToggles()
         setupPermissions()
         setupBackupRestore()
+        setupWidgetControls()
     }
     
     private fun setupSpinners() {
@@ -344,6 +346,18 @@ class SettingsActivity : AppCompatActivity() {
         })
     }
     
+    private fun setupWidgetControls() {
+        binding.btnManageWidgets.setOnClickListener {
+            startActivity(Intent(this, WidgetManagementActivity::class.java))
+        }
+
+        binding.switchShowWidgetsDuringSearch.isChecked =
+            SettingsManager.getShowWidgetsDuringSearch(this)
+        binding.switchShowWidgetsDuringSearch.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setShowWidgetsDuringSearch(this, isChecked)
+        }
+    }
+
     override fun onSupportNavigateUp(): Boolean {
         finish()
         return true
