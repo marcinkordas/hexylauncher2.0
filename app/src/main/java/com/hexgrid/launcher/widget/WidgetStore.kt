@@ -2,6 +2,7 @@ package com.hexgrid.launcher.widget
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import com.hexgrid.launcher.util.SettingsManager
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -25,7 +26,7 @@ class WidgetStore(private val context: Context) {
     fun nextWidgetId(): Int = (loadAll().maxOfOrNull { it.widgetId } ?: 0) + 1
 
     companion object {
-        const val KEY_WIDGETS = "widgets"  // will be unified with SettingsManager in Task 4
+        val KEY_WIDGETS get() = SettingsManager.KEY_WIDGETS
 
         fun entriesToJson(entries: List<WidgetEntry>): String {
             val arr = JSONArray()

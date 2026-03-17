@@ -24,7 +24,7 @@ object SettingsExporter {
     )
     
     private val STRING_KEYS = listOf(
-        "sort_order", "hex_orientation", "search_position"
+        "sort_order", "hex_orientation", "search_position", SettingsManager.KEY_WIDGETS
     )
     
     private val INT_KEYS = listOf(

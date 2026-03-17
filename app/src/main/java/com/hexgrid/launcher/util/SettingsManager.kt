@@ -25,7 +25,9 @@ object SettingsManager {
     private const val KEY_DOCK_TRANSPARENCY = "dock_transparency"
     private const val KEY_SHORTCUT_ICON_SHAPE = "shortcut_icon_shape"
     private const val KEY_ICON_CACHE_DIRTY = "icon_cache_dirty"
-    
+    private const val KEY_SHOW_WIDGETS_DURING_SEARCH = "show_widgets_during_search"
+    const val KEY_WIDGETS = "widgets"  // also used by WidgetStore and SettingsExporter
+
     // Default values
     const val DEFAULT_HEX_RADIUS = 96f
     const val DEFAULT_ICON_SIZE_MULTIPLIER = 1.0f
@@ -226,5 +228,12 @@ object SettingsManager {
     fun getIconCacheDirty(context: Context): Boolean = getPrefs(context).getBoolean(KEY_ICON_CACHE_DIRTY, false)
     fun setIconCacheDirty(context: Context, dirty: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_ICON_CACHE_DIRTY, dirty).apply()
+    }
+
+    // Show Widgets During Search
+    fun getShowWidgetsDuringSearch(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_SHOW_WIDGETS_DURING_SEARCH, false)
+    fun setShowWidgetsDuringSearch(context: Context, value: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_SHOW_WIDGETS_DURING_SEARCH, value).apply()
     }
 }
