@@ -45,6 +45,7 @@
         <activity
             android:name=".ui.PinShortcutActivity"
             android:theme="@style/Theme.HexGridLauncher.Dialog"
+            android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />

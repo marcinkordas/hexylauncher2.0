@@ -1,7 +1,7 @@
 package com.hexgrid.launcher.ui
 
+import android.annotation.SuppressLint
 import android.content.pm.LauncherApps
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -30,7 +30,9 @@ class PinShortcutActivity : AppCompatActivity() {
             ?: shortcutInfo?.longLabel?.toString()
             ?: "Shortcut"
 
-        val icon: Drawable? = shortcutInfo?.let { info ->
+        // getShortcutIconDrawable requires API 25; minSdk is 26 so this is safe (lint false positive)
+        @SuppressLint("NewApi")
+        val icon = shortcutInfo?.let { info ->
             val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
             runCatching {
                 launcherApps.getShortcutIconDrawable(info, resources.displayMetrics.densityDpi)
