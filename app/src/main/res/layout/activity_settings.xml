@@ -262,6 +262,20 @@
                         android:textSize="14sp" />
                 </LinearLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Shortcut Icon Shape"
+                    android:textSize="14sp"
+                    android:textColor="@android:color/white"
+                    android:layout_marginTop="12dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerShortcutIconShape"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@android:color/white" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

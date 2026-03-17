@@ -433,22 +433,7 @@ class HexagonalGridView @JvmOverloads constructor(
         val halfH = height / 2
 
         app.icon.setBounds(-halfW, -halfH + yOffset.toInt(), halfW, halfH + yOffset.toInt())
-
-        if (app.isShortcut) {
-            // Shortcut icons (PWA etc.) are raw bitmaps — clip to squircle matching Samsung's icon shape
-            val cornerRadius = maxSize * 0.3f
-            canvas.save()
-            val clipPath = Path()
-            clipPath.addRoundRect(
-                -halfW.toFloat(), -halfH + yOffset, halfW.toFloat(), halfH + yOffset,
-                cornerRadius, cornerRadius, Path.Direction.CW
-            )
-            canvas.clipPath(clipPath)
-            app.icon.draw(canvas)
-            canvas.restore()
-        } else {
-            app.icon.draw(canvas)
-        }
+        app.icon.draw(canvas)
     }
     
     private fun drawLabelAt(canvas: Canvas, x: Float, y: Float, label: String) {

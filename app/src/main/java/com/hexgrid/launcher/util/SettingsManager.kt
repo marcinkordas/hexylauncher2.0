@@ -23,6 +23,8 @@ object SettingsManager {
     private const val KEY_UNIFIED_BUCKET_COLORS = "unified_bucket_colors"
     private const val KEY_TILE_TRANSPARENCY = "tile_transparency"
     private const val KEY_DOCK_TRANSPARENCY = "dock_transparency"
+    private const val KEY_SHORTCUT_ICON_SHAPE = "shortcut_icon_shape"
+    private const val KEY_ICON_CACHE_DIRTY = "icon_cache_dirty"
     
     // Default values
     const val DEFAULT_HEX_RADIUS = 96f
@@ -68,6 +70,12 @@ object SettingsManager {
         NONE,
         TOP,
         BOTTOM
+    }
+
+    enum class ShortcutIconShape {
+        SQUARE,
+        SQUIRCLE,
+        CIRCLE
     }
     
     private fun getPrefs(context: Context): SharedPreferences {
@@ -196,5 +204,27 @@ object SettingsManager {
     fun getDockTransparency(context: Context): Int = getPrefs(context).getInt(KEY_DOCK_TRANSPARENCY, DEFAULT_DOCK_TRANSPARENCY)
     fun setDockTransparency(context: Context, value: Int) {
         getPrefs(context).edit().putInt(KEY_DOCK_TRANSPARENCY, value.coerceIn(0, 100)).apply()
+    }
+
+    // Shortcut Icon Shape (SQUARE / SQUIRCLE / CIRCLE)
+    fun getShortcutIconShape(context: Context): ShortcutIconShape {
+        val name = getPrefs(context).getString(KEY_SHORTCUT_ICON_SHAPE, ShortcutIconShape.SQUIRCLE.name)
+        return ShortcutIconShape.valueOf(name ?: ShortcutIconShape.SQUIRCLE.name)
+    }
+    fun setShortcutIconShape(context: Context, value: ShortcutIconShape) {
+        getPrefs(context).edit().putString(KEY_SHORTCUT_ICON_SHAPE, value.name).apply()
+    }
+
+    // Returns corner radius ratio for the current shape (0 = square, 0.5 = circle, 0.3 = squircle)
+    fun getShortcutIconCornerRadiusRatio(context: Context): Float = when (getShortcutIconShape(context)) {
+        ShortcutIconShape.SQUARE -> 0f
+        ShortcutIconShape.SQUIRCLE -> 0.3f
+        ShortcutIconShape.CIRCLE -> 0.5f
+    }
+
+    // Icon cache dirty flag — set when a shape change requires icon reload
+    fun getIconCacheDirty(context: Context): Boolean = getPrefs(context).getBoolean(KEY_ICON_CACHE_DIRTY, false)
+    fun setIconCacheDirty(context: Context, dirty: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_ICON_CACHE_DIRTY, dirty).apply()
     }
 }

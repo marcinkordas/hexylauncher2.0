@@ -4,9 +4,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import com.hexgrid.launcher.util.ColorExtractor
+import com.hexgrid.launcher.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -24,7 +31,13 @@ class AppRepository(private val context: Context) {
 
     suspend fun loadInstalledApps(): List<AppInfo> = withContext(Dispatchers.Default) {
         val usageStats = UsageTracker.getAllStats(context)
-        
+
+        // If icon shape changed since last load, rebuild from scratch
+        if (SettingsManager.getIconCacheDirty(context)) {
+            cachedApps = null
+            SettingsManager.setIconCacheDirty(context, false)
+        }
+
         // If we have cached apps, just update their usage stats and return
         cachedApps?.let { cache ->
             return@withContext cache.map { app ->
@@ -85,10 +98,12 @@ class AppRepository(private val context: Context) {
                 query.setQueryFlags(android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
                 val shortcuts = launcherApps.getShortcuts(query, currentUser) ?: emptyList()
 
+                val cornerRadiusRatio = SettingsManager.getShortcutIconCornerRadiusRatio(context)
                 shortcuts.mapNotNullTo(apps) { shortcut ->
                     try {
-                        val icon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi) 
+                        val rawIcon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi)
                             ?: context.packageManager.getApplicationIcon(shortcut.`package`)
+                        val icon = if (cornerRadiusRatio > 0f) applyIconMask(rawIcon, cornerRadiusRatio) else rawIcon
                             
                         val (dominantColor, bucket) = ColorExtractor.extractColor(icon, shortcut.`package`)
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
@@ -121,6 +136,32 @@ class AppRepository(private val context: Context) {
         // Update cache
         cachedApps = apps
         apps
+    }
+
+    /**
+     * Clips a drawable to a rounded-rect shape using PorterDuff compositing.
+     * Done at load time so draw-time code is unchanged and hardware canvas quirks are avoided.
+     * [cornerRadiusRatio] is a fraction of the icon half-size: 0.3 = squircle, 0.5 = circle.
+     */
+    private fun applyIconMask(drawable: Drawable, cornerRadiusRatio: Float): Drawable {
+        val size = drawable.intrinsicWidth.takeIf { it > 0 } ?: 192
+
+        // Draw icon to a temporary bitmap
+        val iconBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(Canvas(iconBitmap))
+
+        // Create output: draw rounded-rect shape, then composite icon with SRC_IN
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        val cornerRadius = size * cornerRadiusRatio
+        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), cornerRadius, cornerRadius, Paint(Paint.ANTI_ALIAS_FLAG))
+        canvas.drawBitmap(iconBitmap, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        })
+        iconBitmap.recycle()
+
+        return BitmapDrawable(context.resources, output)
     }
 
     fun launchApp(app: AppInfo, context: Context) {

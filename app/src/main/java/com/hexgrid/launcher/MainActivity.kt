@@ -214,6 +214,11 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         binding.hexGrid.refreshSettings()
         setupDock()
-        viewModel.loadApps()
+        // reloadApps() if icon shape was changed in settings (dirty flag cleared by AppRepository)
+        if (SettingsManager.getIconCacheDirty(this)) {
+            viewModel.reloadApps()
+        } else {
+            viewModel.loadApps()
+        }
     }
 }

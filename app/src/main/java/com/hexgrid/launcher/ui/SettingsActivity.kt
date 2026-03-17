@@ -94,6 +94,23 @@ class SettingsActivity : AppCompatActivity() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+
+        // Shortcut Icon Shape
+        val shapeOptions = SettingsManager.ShortcutIconShape.values().map { it.name }
+        binding.spinnerShortcutIconShape.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, shapeOptions).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        binding.spinnerShortcutIconShape.setSelection(SettingsManager.getShortcutIconShape(this).ordinal)
+        binding.spinnerShortcutIconShape.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val newShape = SettingsManager.ShortcutIconShape.values()[position]
+                if (newShape != SettingsManager.getShortcutIconShape(this@SettingsActivity)) {
+                    SettingsManager.setShortcutIconShape(this@SettingsActivity, newShape)
+                    SettingsManager.setIconCacheDirty(this@SettingsActivity, true)
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
     
     private fun setupToggles() {
