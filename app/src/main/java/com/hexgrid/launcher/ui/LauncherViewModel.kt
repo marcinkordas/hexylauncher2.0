@@ -24,6 +24,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private var allInstalledApps: List<AppInfo> = emptyList()
 
     private val _hiddenApps = mutableSetOf<String>()
+    // Not cleared on reload — availability is driven by LauncherApps.Callback (Samsung Modes /
+    // work profiles), not the installed app list. System notifies us via markUnavailable/markAvailable.
     private val _unavailableApps = mutableSetOf<String>()
 
     // Tracks active search query so reloads don't clobber filter state

@@ -5,8 +5,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 /**
- * Tests for the filtering logic extracted from LauncherViewModel.
- * Verifies hidden/unavailable filtering and query matching.
+ * Tests the filter algorithm used inside [LauncherViewModel.updateAppList] in isolation.
+ *
+ * Note: Full ViewModel integration (markUnavailable, markAvailable, reloadApps) requires
+ * instrumented tests since LauncherViewModel is an AndroidViewModel. These tests cover
+ * the pure filtering logic only.
  */
 class AppFilterLogicTest {
 
@@ -83,7 +86,7 @@ class AppFilterLogicTest {
     }
 
     @Test
-    fun `markUnavailable adds packages and re-filters`() {
+    fun `filtering with unavailable set excludes restricted packages`() {
         val unavailable = mutableSetOf<String>()
         unavailable.addAll(listOf("com.samsung.restricted"))
         val apps = listOf(makeApp("com.samsung.restricted", "App A"), makeApp("b", "App B"))
@@ -93,7 +96,7 @@ class AppFilterLogicTest {
     }
 
     @Test
-    fun `markAvailable removes packages from unavailable set`() {
+    fun `removing from unavailable set restores those packages to visible`() {
         val unavailable = mutableSetOf("com.pkg.a", "com.pkg.b")
         unavailable.removeAll(setOf("com.pkg.a"))
         assertFalse(unavailable.contains("com.pkg.a"))
