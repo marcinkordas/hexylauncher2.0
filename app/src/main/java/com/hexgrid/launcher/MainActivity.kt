@@ -7,6 +7,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.LauncherApps
 import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import android.os.UserHandle
 import android.view.View
 import android.os.Bundle
@@ -38,7 +41,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── LauncherApps.Callback (Samsung Modes, work profiles, shortcuts) ───────
+    // ── Legacy shortcut receiver (Vivaldi and other browsers that don't use requestPinShortcut) ──
+    @Suppress("DEPRECATION")
+    private val installShortcutReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != "com.android.launcher.action.INSTALL_SHORTCUT") return
+            val name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME) ?: return
+            val launchIntent = intent.getParcelableExtra<Intent>(Intent.EXTRA_SHORTCUT_INTENT) ?: return
+            if (launchIntent.action == null) launchIntent.action = Intent.ACTION_VIEW
+
+            val shortcutManager = getSystemService(ShortcutManager::class.java)
+            val builder = ShortcutInfo.Builder(context, "legacy_${System.currentTimeMillis()}")
+                .setShortLabel(name)
+                .setIntent(launchIntent)
+
+            val iconBitmap = intent.getParcelableExtra<Bitmap>(Intent.EXTRA_SHORTCUT_ICON)
+            if (iconBitmap != null) {
+                builder.setIcon(Icon.createWithBitmap(iconBitmap))
+            }
+
+            try {
+                shortcutManager.requestPinShortcut(builder.build(), null)
+            } catch (_: Exception) { }
+        }
+    }
+
+    // ── LauncherApps.Callback (work profiles, shortcuts) ─────────────────────
     private val launcherAppsCallback = object : LauncherApps.Callback() {
         override fun onPackageAdded(packageName: String, user: UserHandle) {
             viewModel.reloadApps()
@@ -83,6 +111,8 @@ class MainActivity : AppCompatActivity() {
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, pkgFilter)
+        registerReceiver(installShortcutReceiver,
+            IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"))
 
         setupGrid()
         setupDock()
@@ -95,6 +125,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         launcherAppsService.unregisterCallback(launcherAppsCallback)
         unregisterReceiver(packageChangeReceiver)
+        unregisterReceiver(installShortcutReceiver)
     }
 
     override fun onNewIntent(intent: Intent?) {

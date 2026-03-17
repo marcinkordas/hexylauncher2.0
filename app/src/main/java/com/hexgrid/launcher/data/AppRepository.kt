@@ -6,9 +6,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
+import android.graphics.Path
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -139,27 +137,25 @@ class AppRepository(private val context: Context) {
     }
 
     /**
-     * Clips a drawable to a rounded-rect shape using PorterDuff compositing.
-     * Done at load time so draw-time code is unchanged and hardware canvas quirks are avoided.
-     * [cornerRadiusRatio] is a fraction of the icon half-size: 0.3 = squircle, 0.5 = circle.
+     * Clips a drawable to a rounded-rect shape at load time.
+     * Uses clipPath on a software Canvas (Bitmap-backed) — always works correctly,
+     * unlike clipPath on hardware-accelerated View canvas or PorterDuff on some devices.
+     * [cornerRadiusRatio] is 0.3 for squircle, 0.5 for circle.
      */
     private fun applyIconMask(drawable: Drawable, cornerRadiusRatio: Float): Drawable {
-        val size = drawable.intrinsicWidth.takeIf { it > 0 } ?: 192
+        val size = (drawable.intrinsicWidth.takeIf { it > 0 } ?: 192).coerceIn(48, 512)
 
-        // Draw icon to a temporary bitmap
-        val iconBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        drawable.setBounds(0, 0, size, size)
-        drawable.draw(Canvas(iconBitmap))
-
-        // Create output: draw rounded-rect shape, then composite icon with SRC_IN
         val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(output)
+        val canvas = Canvas(output) // software canvas — clipPath always works
+
         val cornerRadius = size * cornerRadiusRatio
-        canvas.drawRoundRect(0f, 0f, size.toFloat(), size.toFloat(), cornerRadius, cornerRadius, Paint(Paint.ANTI_ALIAS_FLAG))
-        canvas.drawBitmap(iconBitmap, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
-        })
-        iconBitmap.recycle()
+        val clipPath = Path()
+        clipPath.addRoundRect(0f, 0f, size.toFloat(), size.toFloat(),
+            cornerRadius, cornerRadius, Path.Direction.CW)
+        canvas.clipPath(clipPath)
+
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(canvas)
 
         return BitmapDrawable(context.resources, output)
     }
