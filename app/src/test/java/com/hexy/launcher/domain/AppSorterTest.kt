@@ -4,6 +4,7 @@ import com.hexgrid.launcher.data.AppInfo
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock
+import android.content.Context
 import android.graphics.drawable.Drawable
 
 /**
@@ -33,16 +34,18 @@ class AppSorterTest {
         )
     }
 
+    private val mockContext = mock(Context::class.java)
+
     @Test
     fun `empty list returns empty`() {
-        val result = AppSorter.sortApps(emptyList())
+        val result = AppSorter.sortApps(emptyList(), mockContext)
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `single app is placed at center`() {
         val app = createMockApp("com.example", usageCount = 100)
-        val result = AppSorter.sortApps(listOf(app))
+        val result = AppSorter.sortApps(listOf(app), mockContext)
         assertEquals(1, result.size)
         assertEquals("com.example", result[0].packageName)
     }
@@ -54,7 +57,7 @@ class AppSorterTest {
             createMockApp("high", usageCount = 1000),
             createMockApp("medium", usageCount = 100)
         )
-        val result = AppSorter.sortApps(apps)
+        val result = AppSorter.sortApps(apps, mockContext)
         assertEquals("high", result[0].packageName)
     }
 
@@ -63,14 +66,14 @@ class AppSorterTest {
         val now = System.currentTimeMillis()
         val apps = (0..25).map { i ->
             createMockApp(
-                "app$i", 
+                "app$i",
                 usageCount = (25 - i).toLong(),
                 lastUsedTimestamp = now - (i * 60000) // Progressively older
             )
         }
-        
-        val result = AppSorter.sortApps(apps)
-        
+
+        val result = AppSorter.sortApps(apps, mockContext)
+
         // First app should be most used
         // Apps 1-18 should be most recently used
         assertEquals(26, result.size)
@@ -81,8 +84,8 @@ class AppSorterTest {
         val apps = (0..5).map { bucket ->
             createMockApp("bucket$bucket", colorBucket = bucket, usageCount = 100)
         }
-        
-        val result = AppSorter.sortApps(apps)
+
+        val result = AppSorter.sortApps(apps, mockContext)
         assertEquals(6, result.size)
     }
 }
