@@ -111,8 +111,13 @@ class MainActivity : AppCompatActivity() {
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, pkgFilter)
-        registerReceiver(installShortcutReceiver,
-            IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"))
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(installShortcutReceiver,
+                IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"), RECEIVER_EXPORTED)
+        } else {
+            registerReceiver(installShortcutReceiver,
+                IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"))
+        }
 
         setupGrid()
         setupDock()

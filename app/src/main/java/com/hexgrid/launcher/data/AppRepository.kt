@@ -7,6 +7,7 @@ import android.content.pm.ResolveInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Path
+import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -19,7 +20,7 @@ class AppRepository(private val context: Context) {
 
     private val packageManager: PackageManager = context.packageManager
     private val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as android.content.pm.LauncherApps
-    
+
     // Memory cache to prevent sluggish reloading
     private var cachedApps: List<AppInfo>? = null
 
@@ -50,8 +51,9 @@ class AppRepository(private val context: Context) {
             }
         }
 
+        val cornerRadiusRatio = SettingsManager.getShortcutIconCornerRadiusRatio(context)
         val apps = mutableListOf<AppInfo>()
-        
+
         // 1. Load regular launcher apps
         val intent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
@@ -63,10 +65,15 @@ class AppRepository(private val context: Context) {
             try {
                 val packageName = ri.activityInfo.packageName
                 val label = ri.loadLabel(packageManager).toString()
-                val icon: Drawable = ri.loadIcon(packageManager)
-                // Note: System clock apps typically have their own dynamic icons
-                // that update automatically - no need to wrap them
-                
+                val rawIcon: Drawable = ri.loadIcon(packageManager)
+                // Apply squircle/circle mask to non-adaptive icons (WebAPKs, old apps)
+                // AdaptiveIconDrawable icons are already shaped by the system (Samsung squircle etc.)
+                val icon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
+                    applyIconMask(rawIcon, cornerRadiusRatio)
+                } else {
+                    rawIcon
+                }
+
                 val (dominantColor, bucket) = ColorExtractor.extractColor(icon, packageName)
                 val stats = usageStats[packageName]
 
@@ -96,19 +103,22 @@ class AppRepository(private val context: Context) {
                 query.setQueryFlags(android.content.pm.LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
                 val shortcuts = launcherApps.getShortcuts(query, currentUser) ?: emptyList()
 
-                val cornerRadiusRatio = SettingsManager.getShortcutIconCornerRadiusRatio(context)
                 shortcuts.mapNotNullTo(apps) { shortcut ->
                     try {
                         val rawIcon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi)
                             ?: context.packageManager.getApplicationIcon(shortcut.`package`)
-                        val icon = if (cornerRadiusRatio > 0f) applyIconMask(rawIcon, cornerRadiusRatio) else rawIcon
-                            
+                        val icon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
+                            applyIconMask(rawIcon, cornerRadiusRatio)
+                        } else {
+                            rawIcon
+                        }
+
                         val (dominantColor, bucket) = ColorExtractor.extractColor(icon, shortcut.`package`)
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
                         val stats = usageStats[shortcutKey]
 
                         val notifCount = com.hexgrid.launcher.service.NotificationListener.getNotificationCount(shortcut.`package`)
-                        
+
                         AppInfo(
                             packageName = shortcut.`package`,
                             label = shortcut.shortLabel?.toString() ?: shortcut.id,
@@ -130,7 +140,7 @@ class AppRepository(private val context: Context) {
                 e.printStackTrace()
             }
         }
-        
+
         // Update cache
         cachedApps = apps
         apps
@@ -163,7 +173,7 @@ class AppRepository(private val context: Context) {
     fun launchApp(app: AppInfo, context: Context) {
         val key = if (app.isShortcut && app.shortcutId != null) "${app.packageName}_${app.shortcutId}" else app.packageName
         UsageTracker.recordClick(context, key)
-        
+
         if (app.isShortcut && app.shortcutId != null && app.userHandle != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
             try {
                 launcherApps.startShortcut(app.packageName, app.shortcutId, null, null, app.userHandle)
