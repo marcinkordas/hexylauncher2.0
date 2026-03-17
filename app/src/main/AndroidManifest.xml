@@ -41,6 +41,16 @@
             android:exported="false"
             android:label="Manage Apps" />
 
+        <!-- Handles "Add to Home Screen" requests from Chrome and other apps -->
+        <activity
+            android:name=".ui.PinShortcutActivity"
+            android:theme="@style/Theme.HexGridLauncher.Dialog"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
+
         <!-- Notification Listener Service -->
         <service
             android:name=".service.NotificationListener"
