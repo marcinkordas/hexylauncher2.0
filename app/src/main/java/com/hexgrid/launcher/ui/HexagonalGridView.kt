@@ -524,6 +524,10 @@ class HexagonalGridView @JvmOverloads constructor(
                     }
                     return true
                 }
+                MotionEvent.ACTION_CANCEL -> {
+                    onPlacementCancelled?.invoke()
+                    return true
+                }
             }
             return true
         }

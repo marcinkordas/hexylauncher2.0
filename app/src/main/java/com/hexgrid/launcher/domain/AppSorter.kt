@@ -72,16 +72,13 @@ object AppSorter {
         // Build result
         val result = mutableListOf<AppInfo>()
         
-        // Add inner apps (ring 0 + ring 1) - first 7 positions
-        for (i in 0 until minOf(7, innerApps.size)) {
-            result.add(innerApps[i])
+        // Add inner apps (ring 0 + ring 1) - first 7 spiral positions, skipping occupied
+        val innerQueue = innerApps.toMutableList()
+        for (i in 0 until minOf(7, spiral.size)) {
+            if (occupiedCells.isNotEmpty() && spiral[i].first in occupiedCells) continue
+            result.add(innerQueue.removeFirstOrNull() ?: emptyPlaceholder!!)
         }
-        
-        // Fill remaining inner positions if not enough apps
-        while (result.size < 7 && innerApps.isNotEmpty()) {
-            result.add(emptyPlaceholder!!)
-        }
-        
+
         // Add outer apps (ring 2+) - position 7 onwards
         for (i in 7 until spiral.size) {
             if (occupiedCells.isNotEmpty() && spiral[i].first in occupiedCells) continue

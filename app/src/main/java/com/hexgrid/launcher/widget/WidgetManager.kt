@@ -27,6 +27,9 @@ class WidgetManager(
 ) {
     private val appWidgetManager = AppWidgetManager.getInstance(context)
     private val hostViews = mutableMapOf<Int, AppWidgetHostView>()  // widgetId → view
+    private var cachedEntries: List<WidgetEntry> = emptyList()
+    private var currentScrollX = 0f
+    private var currentScrollY = 0f
 
     /** Call from MainActivity.onStart() */
     fun startListening() = host.startListening()
@@ -57,6 +60,9 @@ class WidgetManager(
         if (invalid.isNotEmpty()) {
             val cleaned = entries.filter { it !in invalid }
             store.saveAll(cleaned)
+            cachedEntries = cleaned
+        } else {
+            cachedEntries = entries
         }
     }
 
@@ -81,12 +87,11 @@ class WidgetManager(
             heightPx = heightPx
         )
         store.add(entry)
+        cachedEntries = cachedEntries + entry
 
         val view = host.createHostView(context, appWidgetId, info)
         attachView(view, entry)
         hostViews[entry.widgetId] = view
-
-        setupEditGestures(view, entry)
     }
 
     /**
@@ -94,15 +99,18 @@ class WidgetManager(
      */
     fun remove(widgetId: Int) {
         hostViews.remove(widgetId)?.let { container.removeView(it) }
-        store.loadAll().find { it.widgetId == widgetId }?.let {
+        cachedEntries.find { it.widgetId == widgetId }?.let {
             host.releaseId(it.appWidgetId)
         }
         store.remove(widgetId)
+        cachedEntries = cachedEntries.filter { it.widgetId != widgetId }
     }
 
     /** Called on every HexagonalGridView scroll event to sync widget positions. */
     fun syncScroll(offsetX: Float, offsetY: Float) {
-        for (entry in store.loadAll()) {
+        currentScrollX = offsetX
+        currentScrollY = offsetY
+        for (entry in cachedEntries) {
             val view = hostViews[entry.widgetId] ?: continue
             val pos = positionForEntry(entry, offsetX, offsetY)
             view.x = pos.x - entry.widthPx / 2f
@@ -116,7 +124,7 @@ class WidgetManager(
         val w = containerWidth()
         val h = containerHeight()
         val cells = mutableSetOf<HexCoordinate>()
-        for (entry in store.loadAll()) {
+        for (entry in cachedEntries) {
             // Sample corners + center of the widget bounding box to find occupied hexes
             val centerPx = calc.hexToPixel(HexCoordinate(entry.centerHexQ, entry.centerHexR), w / 2f, h / 2f)
             val halfW = entry.widthPx / 2f
@@ -139,15 +147,16 @@ class WidgetManager(
         return cells
     }
 
-    fun loadedEntries(): List<WidgetEntry> = store.loadAll()
+    fun loadedEntries(): List<WidgetEntry> = cachedEntries
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun attachView(view: AppWidgetHostView, entry: WidgetEntry) {
+        view.tag = "widget_${entry.widgetId}"
         val lp = FrameLayout.LayoutParams(entry.widthPx, entry.heightPx)
         container.addView(view, lp)
         // Position after layout pass; use post() because width/height may be 0 at this point
-        container.post { syncScroll(0f, 0f) }
+        container.post { syncScroll(currentScrollX, currentScrollY) }
         setupEditGestures(view, entry)
     }
 
@@ -193,7 +202,7 @@ class WidgetManager(
     }
 
     private fun handleEditTouch(view: AppWidgetHostView, originalEntry: WidgetEntry, event: MotionEvent) {
-        val currentEntry = store.loadAll().find { it.widgetId == originalEntry.widgetId } ?: return
+        val currentEntry = cachedEntries.find { it.widgetId == originalEntry.widgetId } ?: return
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 dragStartX = event.rawX
@@ -256,27 +265,27 @@ class WidgetManager(
         // view.x/y is top-left; widget center is view.x + width/2, view.y + height/2
         val centerX = view.x + entry.widthPx / 2f
         val centerY = view.y + entry.heightPx / 2f
-        val newHex = calc.pixelToHex(centerX, centerY, w / 2f, h / 2f)
+        val newHex = calc.pixelToHex(centerX, centerY, w / 2f + currentScrollX, h / 2f + currentScrollY)
         val updated = entry.copy(centerHexQ = newHex.q, centerHexR = newHex.r)
         store.update(updated)
-        syncScroll(0f, 0f)
+        cachedEntries = cachedEntries.map { if (it.widgetId == updated.widgetId) updated else it }
+        syncScroll(currentScrollX, currentScrollY)
     }
 
     private fun saveResizedDimensions(view: AppWidgetHostView, entry: WidgetEntry) {
         val lp = view.layoutParams as FrameLayout.LayoutParams
         val updated = entry.copy(widthPx = lp.width, heightPx = lp.height)
         store.update(updated)
-        notifyWidgetSize(entry.appWidgetId, lp.width, lp.height)
+        cachedEntries = cachedEntries.map { if (it.widgetId == updated.widgetId) updated else it }
+        notifyWidgetSize(view, lp.width, lp.height)
     }
 
-    private fun notifyWidgetSize(appWidgetId: Int, widthPx: Int, heightPx: Int) {
+    private fun notifyWidgetSize(view: AppWidgetHostView, widthPx: Int, heightPx: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            appWidgetManager.updateAppWidgetSize(
-                Bundle(), listOf(SizeF(widthPx.toFloat(), heightPx.toFloat()))
-            )
+            view.updateAppWidgetSize(Bundle(), listOf(SizeF(widthPx.toFloat(), heightPx.toFloat())))
         } else {
             @Suppress("DEPRECATION")
-            appWidgetManager.updateAppWidgetSize(Bundle(), widthPx, heightPx, widthPx, heightPx)
+            view.updateAppWidgetSize(Bundle(), widthPx, heightPx, widthPx, heightPx)
         }
     }
 
