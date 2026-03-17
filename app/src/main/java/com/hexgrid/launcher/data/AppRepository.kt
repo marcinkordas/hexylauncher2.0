@@ -18,6 +18,10 @@ class AppRepository(private val context: Context) {
     // Memory cache to prevent sluggish reloading
     private var cachedApps: List<AppInfo>? = null
 
+    fun invalidateCache() {
+        cachedApps = null
+    }
+
     suspend fun loadInstalledApps(): List<AppInfo> = withContext(Dispatchers.Default) {
         val usageStats = UsageTracker.getAllStats(context)
         
