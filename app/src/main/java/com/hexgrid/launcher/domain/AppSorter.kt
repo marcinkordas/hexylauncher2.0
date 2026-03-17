@@ -16,7 +16,11 @@ object AppSorter {
     
     private var emptyPlaceholder: AppInfo? = null
     
-    fun sortApps(apps: List<AppInfo>, context: Context): List<AppInfo> {
+    fun sortApps(
+        apps: List<AppInfo>,
+        context: Context,
+        occupiedCells: Set<HexCoordinate> = emptySet()
+    ): List<AppInfo> {
         if (apps.isEmpty()) return emptyList()
         
         val sortOrder = SettingsManager.getSortOrder(context)
@@ -80,15 +84,17 @@ object AppSorter {
         
         // Add outer apps (ring 2+) - position 7 onwards
         for (i in 7 until spiral.size) {
+            if (occupiedCells.isNotEmpty() && spiral[i].first in occupiedCells) continue
+
             val bucket = spiral[i].second
-            
+
             if (bucket in 0..10 && bucketQueues[bucket].isNotEmpty()) {
                 result.add(bucketQueues[bucket].removeAt(0))
             } else {
                 // Empty slot - use placeholder
                 result.add(emptyPlaceholder!!)
             }
-            
+
             // Stop if all buckets empty
             if (bucketQueues.all { it.isEmpty() }) {
                 // Fill remaining slots in current ring, then stop

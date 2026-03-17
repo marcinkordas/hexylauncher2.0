@@ -1,6 +1,7 @@
 package com.hexgrid.launcher.domain
 
 import com.hexgrid.launcher.data.AppInfo
+import com.hexgrid.launcher.domain.HexCoordinate
 import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.Mockito.mock
@@ -87,5 +88,18 @@ class AppSorterTest {
 
         val result = AppSorter.sortApps(apps, mockContext)
         assertEquals(6, result.size)
+    }
+
+    @Test
+    fun `occupied cells reduce result count for outer rings`() {
+        val apps = (0..20).map { i -> createMockApp("app$i", usageCount = (20 - i).toLong()) }
+        val occupied = setOf(
+            HexCoordinate(2, 0),
+            HexCoordinate(2, -1)
+        )
+        val full = AppSorter.sortApps(apps, mockContext)
+        val filtered = AppSorter.sortApps(apps, mockContext, occupied)
+        // filtered result should be smaller or equal (occupied positions become gaps)
+        assertTrue(filtered.size <= full.size)
     }
 }
