@@ -13,6 +13,14 @@
         android:text="Add Widget"
         android:textColor="@android:color/white" />
 
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchShowWidgetsDuringSearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="8dp"
+        android:text="Show widgets during search" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerWidgets"
         android:layout_width="match_parent"

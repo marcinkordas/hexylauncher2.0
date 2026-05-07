@@ -19,6 +19,7 @@ import com.google.android.material.button.MaterialButton
 import com.hexgrid.launcher.MainActivity
 import com.hexgrid.launcher.R
 import com.hexgrid.launcher.databinding.ActivityWidgetManagementBinding
+import com.hexgrid.launcher.util.SettingsManager
 import com.hexgrid.launcher.widget.WidgetEntry
 import com.hexgrid.launcher.widget.WidgetHost
 import com.hexgrid.launcher.widget.WidgetStore
@@ -78,6 +79,13 @@ class WidgetManagementActivity : AppCompatActivity() {
         widgetStore = WidgetStore(this)
 
         binding.btnAddWidget.setOnClickListener { startWidgetPicker() }
+
+        binding.switchShowWidgetsDuringSearch.isChecked =
+            SettingsManager.getShowWidgetsDuringSearch(this)
+        binding.switchShowWidgetsDuringSearch.setOnCheckedChangeListener { _, isChecked ->
+            SettingsManager.setShowWidgetsDuringSearch(this, isChecked)
+        }
+
         setupRecycler()
     }
 
