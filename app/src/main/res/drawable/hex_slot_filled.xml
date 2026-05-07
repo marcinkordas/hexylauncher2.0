@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Regular pointy-top hexagon, stroke-only. Used on hero tile and Shape toolbar button.
+     Sized so the hexagon is ~55% of a 100×100 viewport (R=46, 4dp padding for stroke). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="55dp"
+    android:height="55dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:pathData="M50,4 L89.83,27 L89.83,73 L50,96 L10.17,73 L10.17,27 Z"
+        android:strokeColor="?attr/colorOnPrimary"
+        android:strokeWidth="2"
+        android:fillColor="@android:color/transparent" />
+</vector>
