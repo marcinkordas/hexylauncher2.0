@@ -1,6 +1,5 @@
 package com.hexgrid.launcher.ui
 
-import android.app.NotificationManager
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
