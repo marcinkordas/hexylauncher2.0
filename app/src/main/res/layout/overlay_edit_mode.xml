@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Root layout for EditModeOverlay. Fills hexGridContainer (MATCH_PARENT × MATCH_PARENT).
+     Panel sits above the toolbar; toolbar is centered at the bottom with inset margin. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Active panel container: sits above toolbar, horizontal margin for breathing room -->
+    <FrameLayout
+        android:id="@+id/panelContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="96dp" />
+
+    <!-- Toolbar pill: 5 squircle buttons -->
+    <LinearLayout
+        android:id="@+id/toolbarPill"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/edit_toolbar_pill_bg"
+        android:elevation="4dp"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnShape"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/tile_squircle_secondary"
+            android:contentDescription="Shape"
+            android:text="⬡"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStyle"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/tile_squircle_secondary"
+            android:contentDescription="Style"
+            android:text="🎨"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOrder"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/tile_squircle_secondary"
+            android:contentDescription="Order"
+            android:text="↕"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMore"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/tile_squircle_secondary"
+            android:contentDescription="More"
+            android:text="⋯"
+            android:textSize="20sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDone"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/tile_squircle_secondary"
+            android:contentDescription="Done"
+            android:text="✓"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shape panel: hex size, icon appearance, orientation -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/tile_squircle_secondary"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:elevation="4dp">
+
+    <!-- Hex Radius: 50–150 dp -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hex radius"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderHexRadius"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="50"
+        android:valueTo="150"
+        android:stepSize="1"
+        android:contentDescription="Hex radius" />
+
+    <!-- Icon size: 0.5–1.5× -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Icon size"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderIconSize"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="0.5"
+        android:valueTo="1.5"
+        android:stepSize="0.05"
+        android:contentDescription="Icon size" />
+
+    <!-- Icon padding: 0–20 dp -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Icon padding"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderIconPadding"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="0"
+        android:valueTo="20"
+        android:stepSize="1"
+        android:contentDescription="Icon padding" />
+
+    <!-- Outline width: 0.5–4 dp -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Outline width"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderOutlineWidth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="0.5"
+        android:valueTo="4.0"
+        android:stepSize="0.5"
+        android:contentDescription="Outline width" />
+
+    <!-- Corner radius: 0–20 dp -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Corner radius"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderCornerRadius"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="0"
+        android:valueTo="20"
+        android:stepSize="1"
+        android:contentDescription="Corner radius" />
+
+    <!-- Hex orientation: Pointy / Flat toggle -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Hex orientation"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleHexOrientation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        app:singleSelection="true"
+        app:selectionRequired="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOrientationPointy"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pointy" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOrientationFlat"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Flat" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+</LinearLayout>
