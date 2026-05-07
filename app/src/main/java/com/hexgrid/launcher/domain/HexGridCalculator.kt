@@ -19,6 +19,8 @@ class HexGridCalculator(
     
     private val hexWidth = sqrt(3f) * hexRadius
     private val hexHeight = 2f * hexRadius
+
+    fun getHexRadius(): Float = hexRadius
     
     /**
      * Convert axial (q, r) to screen pixel (x, y).

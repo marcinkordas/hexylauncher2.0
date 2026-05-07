@@ -158,6 +158,9 @@ class MainActivity : AppCompatActivity() {
         setupBackHandler()
         setupWidgetScrollSync()
 
+        // startListening MUST come before restoreWidgets so that
+        // AppWidgetHostViews receive their initial RemoteViews update.
+        widgetManager.startListening()
         widgetManager.restoreWidgets()
         updateOccupiedCells()
 
@@ -300,9 +303,10 @@ class MainActivity : AppCompatActivity() {
             duration = 200
             addUpdateListener { anim ->
                 val alpha = anim.animatedValue as Float
-                for (i in 0 until binding.hexGridContainer.childCount) {
-                    val child = binding.hexGridContainer.getChildAt(i)
-                    if (child != binding.hexGrid) child.alpha = alpha
+                widgetManager.loadedEntries().forEach { entry ->
+                    binding.hexGridContainer
+                        .findViewWithTag<View>("widget_${entry.widgetId}")
+                        ?.alpha = alpha
                 }
             }
             start()

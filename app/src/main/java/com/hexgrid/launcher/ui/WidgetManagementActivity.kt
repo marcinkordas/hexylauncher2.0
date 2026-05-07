@@ -1,7 +1,9 @@
 package com.hexgrid.launcher.ui
 
 import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,9 +36,9 @@ class WidgetManagementActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            val pickedId = result.data
-                ?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
-            if (pickedId != -1) onWidgetPicked(pickedId)
+            val data = result.data
+            val pickedId = data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
+            if (pickedId != -1) onWidgetPicked(pickedId, data)
             else releasePending()
         } else {
             releasePending()
@@ -45,6 +47,17 @@ class WidgetManagementActivity : AppCompatActivity() {
 
     // Step 2 (if needed): request BIND_APPWIDGET permission
     private val bindPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && pendingAppWidgetId != -1) {
+            launchConfigureOrPlacement(pendingAppWidgetId)
+        } else {
+            releasePending()
+        }
+    }
+
+    // Step 3 (if needed): widget configuration activity
+    private val configureLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK && pendingAppWidgetId != -1) {
@@ -76,14 +89,28 @@ class WidgetManagementActivity : AppCompatActivity() {
         widgetPickerLauncher.launch(intent)
     }
 
-    private fun onWidgetPicked(appWidgetId: Int) {
+    private fun onWidgetPicked(appWidgetId: Int, resultData: Intent?) {
         pendingAppWidgetId = appWidgetId
-        val provider = appWidgetManager.getAppWidgetInfo(appWidgetId)?.provider
-            ?: run { releasePending(); return }
+
+        // The system picker may have already bound the widget (device/version dependent).
+        // If so, skip straight to configure-or-placement.
+        if (appWidgetManager.getAppWidgetInfo(appWidgetId) != null) {
+            launchConfigureOrPlacement(appWidgetId)
+            return
+        }
+
+        // Not yet bound — get provider from picker result and bind manually.
+        val provider: ComponentName? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            resultData?.getParcelableExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, ComponentName::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            resultData?.getParcelableExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER)
+        }
+        if (provider == null) { releasePending(); return }
 
         val bound = appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, provider)
         if (bound) {
-            launchPlacementInMain(appWidgetId)
+            launchConfigureOrPlacement(appWidgetId)
         } else {
             // Need explicit user permission
             val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
@@ -91,6 +118,21 @@ class WidgetManagementActivity : AppCompatActivity() {
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider)
             }
             bindPermissionLauncher.launch(intent)
+        }
+    }
+
+    private fun launchConfigureOrPlacement(appWidgetId: Int) {
+        val info = appWidgetManager.getAppWidgetInfo(appWidgetId)
+        if (info?.configure != null) {
+            // Widget requires configuration before it can render.
+            pendingAppWidgetId = appWidgetId
+            val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_CONFIGURE).apply {
+                component = info.configure
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            }
+            configureLauncher.launch(intent)
+        } else {
+            launchPlacementInMain(appWidgetId)
         }
     }
 
@@ -121,12 +163,10 @@ class WidgetManagementActivity : AppCompatActivity() {
     private fun refreshList() {
         val entries = widgetStore.loadAll()
         binding.recyclerWidgets.adapter = WidgetAdapter(entries) { entry ->
-            // Remove: tell WidgetManager via broadcast or direct call
-            // Since WidgetManager lives in MainActivity, we use a simple approach:
-            // remove from store here and notify MainActivity via a custom broadcast.
-            widgetHost.releaseId(entry.appWidgetId)
+            // Remove from store so the list refreshes immediately, then notify
+            // MainActivity's WidgetManager (which owns the AppWidgetHost lifecycle
+            // and is responsible for calling releaseId — do NOT call it here too).
             widgetStore.remove(entry.widgetId)
-            // Notify MainActivity to detach the view
             sendBroadcast(Intent(ACTION_WIDGET_REMOVED).apply {
                 putExtra(EXTRA_WIDGET_ID, entry.widgetId)
                 setPackage(packageName)

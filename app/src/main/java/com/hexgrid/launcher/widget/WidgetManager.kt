@@ -53,6 +53,7 @@ class WidgetManager(
                 continue
             }
             val view = host.createHostView(context, entry.appWidgetId, info)
+            notifyWidgetSize(view, entry.widthPx, entry.heightPx)
             attachView(view, entry)
             hostViews[entry.widgetId] = view
         }
@@ -75,8 +76,10 @@ class WidgetManager(
             host.releaseId(appWidgetId)
             return
         }
-        val widthPx = info.minWidth.coerceAtLeast(100)
-        val heightPx = info.minHeight.coerceAtLeast(80)
+        // info.minWidth/minHeight are in dp — convert to px for LayoutParams
+        val density = context.resources.displayMetrics.density
+        val widthPx = (info.minWidth * density).toInt().coerceAtLeast((100 * density).toInt())
+        val heightPx = (info.minHeight * density).toInt().coerceAtLeast((80 * density).toInt())
 
         val entry = WidgetEntry(
             widgetId = store.nextWidgetId(),
@@ -90,6 +93,7 @@ class WidgetManager(
         cachedEntries = cachedEntries + entry
 
         val view = host.createHostView(context, appWidgetId, info)
+        notifyWidgetSize(view, entry.widthPx, entry.heightPx)
         attachView(view, entry)
         hostViews[entry.widgetId] = view
     }
@@ -123,25 +127,23 @@ class WidgetManager(
         val calc = hexCalculator()
         val w = containerWidth()
         val h = containerHeight()
+        if (w == 0 || h == 0) return emptySet()
         val cells = mutableSetOf<HexCoordinate>()
         for (entry in cachedEntries) {
-            // Sample corners + center of the widget bounding box to find occupied hexes
             val centerPx = calc.hexToPixel(HexCoordinate(entry.centerHexQ, entry.centerHexR), w / 2f, h / 2f)
             val halfW = entry.widthPx / 2f
             val halfH = entry.heightPx / 2f
-            val samplePoints = listOf(
-                PointF(centerPx.x, centerPx.y),
-                PointF(centerPx.x - halfW, centerPx.y - halfH),
-                PointF(centerPx.x + halfW, centerPx.y - halfH),
-                PointF(centerPx.x - halfW, centerPx.y + halfH),
-                PointF(centerPx.x + halfW, centerPx.y + halfH),
-                PointF(centerPx.x, centerPx.y - halfH),
-                PointF(centerPx.x, centerPx.y + halfH),
-                PointF(centerPx.x - halfW, centerPx.y),
-                PointF(centerPx.x + halfW, centerPx.y)
-            )
-            for (p in samplePoints) {
-                cells.add(calc.pixelToHex(p.x, p.y, w / 2f, h / 2f))
+            // Scan a grid of points across the widget bounding box at half-hex-radius
+            // intervals so that every hex cell underneath is detected, even for large widgets.
+            val step = calc.getHexRadius() * 0.7f  // ~70% of hex radius ensures no gaps
+            var y = centerPx.y - halfH
+            while (y <= centerPx.y + halfH) {
+                var x = centerPx.x - halfW
+                while (x <= centerPx.x + halfW) {
+                    cells.add(calc.pixelToHex(x, y, w / 2f, h / 2f))
+                    x += step
+                }
+                y += step
             }
         }
         return cells
@@ -281,11 +283,15 @@ class WidgetManager(
     }
 
     private fun notifyWidgetSize(view: AppWidgetHostView, widthPx: Int, heightPx: Int) {
+        // updateAppWidgetSize expects sizes in dp, NOT px
+        val density = context.resources.displayMetrics.density
+        val widthDp = (widthPx / density).toInt()
+        val heightDp = (heightPx / density).toInt()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            view.updateAppWidgetSize(Bundle(), listOf(SizeF(widthPx.toFloat(), heightPx.toFloat())))
+            view.updateAppWidgetSize(Bundle(), listOf(SizeF(widthDp.toFloat(), heightDp.toFloat())))
         } else {
             @Suppress("DEPRECATION")
-            view.updateAppWidgetSize(Bundle(), widthPx, heightPx, widthPx, heightPx)
+            view.updateAppWidgetSize(Bundle(), widthDp, heightDp, widthDp, heightDp)
         }
     }
 
