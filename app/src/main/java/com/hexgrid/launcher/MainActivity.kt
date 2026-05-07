@@ -455,16 +455,19 @@ class MainActivity : AppCompatActivity() {
 
     fun exitEditMode() {
         val overlay = editModeOverlay ?: return
+        // Mark the field null synchronously so re-entrant enterEditMode() during the
+        // hide animation creates a fresh overlay instead of double-attaching.
+        editModeOverlay = null
         overlay.hide {
             binding.hexGridContainer.removeView(overlay)
-            editModeOverlay = null
-        }
-        editModeBackCallback?.remove()
-        editModeBackCallback = null
-
-        if (pendingDarkThemeRecreate) {
-            pendingDarkThemeRecreate = false
-            recreate()
+            // Remove back-press callback only after hide() finishes — during the 200ms
+            // animation the overlay is still visible and back-press should still exit.
+            editModeBackCallback?.remove()
+            editModeBackCallback = null
+            if (pendingDarkThemeRecreate) {
+                pendingDarkThemeRecreate = false
+                recreate()
+            }
         }
     }
 

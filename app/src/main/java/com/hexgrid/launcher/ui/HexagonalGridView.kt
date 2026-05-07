@@ -585,6 +585,10 @@ class HexagonalGridView @JvmOverloads constructor(
             val centerX = width / 2f + offsetX
             val centerY = height / 2f + offsetY
             val coord = calculator.pixelToHex(e.x, e.y, centerX, centerY)
+
+            // Widget-occupied cells: explicit no-op (spec §6 "this branch is explicit, not silent").
+            // The widget's own AppWidgetHostView handles long-press internally for move/resize;
+            // the launcher must not steal that gesture or fire the empty-area callback over a widget.
             if (coord in occupiedCells) return
 
             performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
