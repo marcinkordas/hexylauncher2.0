@@ -325,6 +325,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.hexGrid.setOnAppLongClick { app, _, _ -> showContextMenu(app) }
 
+        binding.hexGrid.onEmptyAreaLongPress = { _ -> enterEditMode() }
+
         viewModel.apps.observe(this) { apps ->
             val isFiltering = viewModel.currentQuery.isNotBlank()
             binding.hexGrid.setApps(apps, centerOnChange = isFiltering)
@@ -334,6 +336,12 @@ class MainActivity : AppCompatActivity() {
             allApps = apps
             getCurrentDock().loadDockApps(apps)
         }
+    }
+
+    // Stub — replaced in Chunk 5 with real EditModeOverlay logic.
+    fun enterEditMode() {
+        android.util.Log.d("HexGrid", "enterEditMode() called — stub")
+        android.widget.Toast.makeText(this, "Edit Mode (coming soon)", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun showContextMenu(app: AppInfo) {

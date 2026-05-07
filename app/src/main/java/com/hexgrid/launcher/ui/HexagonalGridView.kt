@@ -98,6 +98,12 @@ class HexagonalGridView @JvmOverloads constructor(
     // Widget support — scroll sync
     var onScrollChanged: ((offsetX: Float, offsetY: Float) -> Unit)? = null
 
+    /**
+     * Edit Mode entry point — fires when user long-presses a hex cell that has no app or widget.
+     * The HexCoordinate parameter is reserved for future "add widget here" placement use.
+     */
+    var onEmptyAreaLongPress: ((HexCoordinate) -> Unit)? = null
+
     // Widget support — occupied cells (positions to skip when laying out app icons)
     private var occupiedCells: Set<HexCoordinate> = emptySet()
 
@@ -553,6 +559,8 @@ class HexagonalGridView @JvmOverloads constructor(
         }
         
         override fun onLongPress(e: MotionEvent) {
+            if (isInPlacementMode) return
+
             val index = findAppIndexAt(e.x, e.y)
             if (index >= 0 && index < apps.size) {
                 val app = apps[index]
@@ -564,15 +572,23 @@ class HexagonalGridView @JvmOverloads constructor(
                     //     arrayOf(android.content.ClipDescription.MIMETYPE_TEXT_PLAIN),
                     //     item
                     // )
-                    
+
                     // val shadow = android.view.View.DragShadowBuilder(this@HexagonalGridView)
                     // @Suppress("DEPRECATION")
                     // startDrag(dragData, shadow, null, 0)
                     performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
-                    
                     onAppLongClickListener?.invoke(app, e.x, e.y)
                 }
+                return
             }
+
+            val centerX = width / 2f + offsetX
+            val centerY = height / 2f + offsetY
+            val coord = calculator.pixelToHex(e.x, e.y, centerX, centerY)
+            if (coord in occupiedCells) return
+
+            performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+            onEmptyAreaLongPress?.invoke(coord)
         }
         
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
