@@ -17,18 +17,18 @@ import com.hexgrid.launcher.util.SettingsManager
  * immediately on change — the SharedPreferences listener in MainActivity propagates
  * the change to the live grid view.
  */
-class ShapePanel(private val context: Context) {
+class ShapePanel(private val context: Context) : EditPanel {
 
     private var _binding: PanelShapeBinding? = null
-    val view: View get() = _binding!!.root
+    override val view: View get() = _binding!!.root
 
-    fun attach(parent: ViewGroup) {
+    override fun attach(parent: ViewGroup) {
         val binding = PanelShapeBinding.inflate(LayoutInflater.from(context), parent, true)
         _binding = binding
         setup(binding)
     }
 
-    fun detach(parent: ViewGroup) {
+    override fun detach(parent: ViewGroup) {
         _binding?.root?.let { parent.removeView(it) }
         _binding = null
     }

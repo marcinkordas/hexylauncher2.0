@@ -50,8 +50,9 @@ class MainActivity : AppCompatActivity() {
     private var widgetFadeAnimator: ValueAnimator? = null
 
     // Edit Mode state — null when overlay is not attached.
-    // Declared as View? so Chunk 4 compiles before EditModeOverlay class exists in Chunk 5.
-    private var editModeOverlay: android.view.View? = null
+    private var editModeOverlay: com.hexgrid.launcher.ui.EditModeOverlay? = null
+
+    private var editModeBackCallback: androidx.activity.OnBackPressedCallback? = null
 
     // Dark-theme recreate is deferred while Edit Mode is active to avoid
     // destroying the overlay mid-session. Flushed in exitEditMode().
@@ -209,6 +210,11 @@ class MainActivity : AppCompatActivity() {
 
         // Handle placement intent if launched for widget placement
         handlePlacementIntent(intent)
+
+        if (intent?.getBooleanExtra(EXTRA_ENTER_EDIT_MODE, false) == true) {
+            intent.removeExtra(EXTRA_ENTER_EDIT_MODE)
+            binding.root.post { enterEditMode() }
+        }
     }
 
     override fun onStart() {
@@ -239,6 +245,12 @@ class MainActivity : AppCompatActivity() {
             binding.hexGrid.animateToOrigin()
         }
         intent?.let { handlePlacementIntent(it) }
+        intent?.let {
+            if (it.getBooleanExtra(EXTRA_ENTER_EDIT_MODE, false) == true) {
+                it.removeExtra(EXTRA_ENTER_EDIT_MODE)
+                binding.root.post { enterEditMode() }
+            }
+        }
     }
 
     private fun handlePlacementIntent(intent: Intent?) {
@@ -412,10 +424,48 @@ class MainActivity : AppCompatActivity() {
         controller.isAppearanceLightStatusBars = !dim
     }
 
-    // Stub — replaced in Chunk 5 with real EditModeOverlay logic.
     fun enterEditMode() {
-        android.util.Log.d("HexGrid", "enterEditMode() called — stub")
-        android.widget.Toast.makeText(this, "Edit Mode (coming soon)", android.widget.Toast.LENGTH_SHORT).show()
+        if (editModeOverlay != null) return
+
+        val overlay = com.hexgrid.launcher.ui.EditModeOverlay(this)
+        overlay.onDone = { exitEditMode() }
+        overlay.onMore = {
+            exitEditMode()
+            startActivity(Intent(this, com.hexgrid.launcher.ui.SettingsHubActivity::class.java))
+        }
+
+        val params = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT
+        )
+        binding.hexGridContainer.addView(overlay, params)
+        editModeOverlay = overlay
+
+        androidx.core.view.ViewCompat.requestApplyInsets(overlay)
+        overlay.show(com.hexgrid.launcher.ui.EditModeOverlay.Mode.SHAPE)
+
+        val callback = object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                exitEditMode()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
+        editModeBackCallback = callback
+    }
+
+    fun exitEditMode() {
+        val overlay = editModeOverlay ?: return
+        overlay.hide {
+            binding.hexGridContainer.removeView(overlay)
+            editModeOverlay = null
+        }
+        editModeBackCallback?.remove()
+        editModeBackCallback = null
+
+        if (pendingDarkThemeRecreate) {
+            pendingDarkThemeRecreate = false
+            recreate()
+        }
     }
 
     private fun showContextMenu(app: AppInfo) {

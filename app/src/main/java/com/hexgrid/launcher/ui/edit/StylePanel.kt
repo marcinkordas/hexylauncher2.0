@@ -17,18 +17,18 @@ import com.hexgrid.launcher.util.SettingsManager
  * MainActivity defers recreate() until Edit Mode exits to avoid destroying the overlay.
  * The "(applied on exit)" label in the layout informs the user of this behaviour.
  */
-class StylePanel(private val context: Context) {
+class StylePanel(private val context: Context) : EditPanel {
 
     private var _binding: PanelStyleBinding? = null
-    val view: View get() = _binding!!.root
+    override val view: View get() = _binding!!.root
 
-    fun attach(parent: ViewGroup) {
+    override fun attach(parent: ViewGroup) {
         val binding = PanelStyleBinding.inflate(LayoutInflater.from(context), parent, true)
         _binding = binding
         setup(binding)
     }
 
-    fun detach(parent: ViewGroup) {
+    override fun detach(parent: ViewGroup) {
         _binding?.root?.let { parent.removeView(it) }
         _binding = null
     }
