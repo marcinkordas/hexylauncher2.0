@@ -24,7 +24,7 @@ import com.hexgrid.launcher.domain.HexCoordinate
 import com.hexgrid.launcher.domain.HexGridCalculator
 import com.hexgrid.launcher.ui.LauncherViewModel
 import com.hexgrid.launcher.data.AppInfo
-import com.hexgrid.launcher.ui.SettingsActivity
+import com.hexgrid.launcher.ui.SettingsHubActivity
 import com.hexgrid.launcher.ui.WidgetManagementActivity
 import com.hexgrid.launcher.util.SettingsManager
 import com.hexgrid.launcher.widget.WidgetHost
@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_PLACEMENT_WIDGET_ID = "extra_placement_widget_id"
+        const val EXTRA_ENTER_EDIT_MODE = "extra_enter_edit_mode"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -271,10 +272,10 @@ class MainActivity : AppCompatActivity() {
             viewModel.filterApps(query)
             animateWidgetVisibility(query.isBlank())
         }
-        dock.onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
+        dock.onSettingsClick = { startActivity(Intent(this, SettingsHubActivity::class.java)) }
         dock.onAppClick = { app ->
             if (app.packageName == packageName) {
-                startActivity(Intent(this, SettingsActivity::class.java))
+                startActivity(Intent(this, SettingsHubActivity::class.java))
             } else {
                 viewModel.launchApp(app)
             }
@@ -316,7 +317,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupGrid() {
         binding.hexGrid.setOnAppClick { app ->
             if (app.packageName == packageName) {
-                startActivity(Intent(this, SettingsActivity::class.java))
+                startActivity(Intent(this, SettingsHubActivity::class.java))
             } else {
                 viewModel.launchApp(app)
             }

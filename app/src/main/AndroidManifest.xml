@@ -33,7 +33,7 @@
         </activity>
 
         <activity
-            android:name=".ui.SettingsActivity"
+            android:name=".ui.SettingsHubActivity"
             android:exported="false"
             android:label="Settings" />
             
