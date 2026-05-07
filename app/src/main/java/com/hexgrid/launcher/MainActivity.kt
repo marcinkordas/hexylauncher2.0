@@ -49,6 +49,43 @@ class MainActivity : AppCompatActivity() {
 
     private var widgetFadeAnimator: ValueAnimator? = null
 
+    // Edit Mode state — null when overlay is not attached.
+    // Declared as View? so Chunk 4 compiles before EditModeOverlay class exists in Chunk 5.
+    private var editModeOverlay: android.view.View? = null
+
+    // Dark-theme recreate is deferred while Edit Mode is active to avoid
+    // destroying the overlay mid-session. Flushed in exitEditMode().
+    private var pendingDarkThemeRecreate: Boolean = false
+
+    // SharedPreferences change listener — drives live grid preview.
+    // Registered in onCreate(), unregistered in onDestroy().
+    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        when (key) {
+            "hex_radius", "icon_size_multiplier", "icon_padding",
+            "outline_width", "corner_radius", "show_outline",
+            "show_labels", "show_notification_glow",
+            "unified_bucket_colors", "tile_transparency" -> {
+                binding.hexGrid.invalidate()
+            }
+            "dock_transparency" -> {
+                getCurrentDock().invalidate()
+            }
+            "dark_theme" -> {
+                if (editModeOverlay == null) recreate()
+                else pendingDarkThemeRecreate = true
+            }
+            "hex_orientation"     -> recomputeGridAndInvalidate()
+            "sort_order"          -> reloadAppsAndInvalidate()
+            "search_position"     -> repositionSearchBar()
+            "search_with_mic"     -> updateSearchMicButton()
+            "shortcut_icon_shape" -> {
+                com.hexgrid.launcher.util.SettingsManager.setIconCacheDirty(this, true)
+                binding.hexGrid.invalidate()
+            }
+            "dim_status_bar"      -> applyStatusBarDim()
+        }
+    }
+
     // ── Package change receiver ───────────────────────────────────────────────
     private val packageChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -110,6 +147,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(prefsListener)
 
         viewModel.setActivityContext(this)
         launcherAppsService = getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
@@ -182,6 +222,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(prefsListener)
         super.onDestroy()
         launcherAppsService.unregisterCallback(launcherAppsCallback)
         unregisterReceiver(packageChangeReceiver)
@@ -336,6 +378,38 @@ class MainActivity : AppCompatActivity() {
             allApps = apps
             getCurrentDock().loadDockApps(apps)
         }
+    }
+
+    /** Reloads hex grid calculator settings (radius, orientation) and invalidates. */
+    private fun recomputeGridAndInvalidate() {
+        binding.hexGrid.refreshSettings()
+    }
+
+    /** Invalidates the app list then redraws — used when sort order changes. */
+    private fun reloadAppsAndInvalidate() {
+        viewModel.reloadApps()
+    }
+
+    /** Shows/hides/repositions the search dock based on current search_position setting. */
+    private fun repositionSearchBar() {
+        setupDock()
+    }
+
+    /** Toggles the mic button in the dock based on search_with_mic setting. */
+    private fun updateSearchMicButton() {
+        getCurrentDock().refreshSettings()
+    }
+
+    /**
+     * Applies dim_status_bar setting via WindowInsetsController.
+     * In Edit Mode the effect is hidden behind the overlay — the Style panel
+     * label "(applied on exit)" is a UX hint.
+     */
+    private fun applyStatusBarDim() {
+        val controller = androidx.core.view.WindowCompat
+            .getInsetsController(window, binding.root)
+        val dim = com.hexgrid.launcher.util.SettingsManager.getDimStatusBar(this)
+        controller.isAppearanceLightStatusBars = !dim
     }
 
     // Stub — replaced in Chunk 5 with real EditModeOverlay logic.
