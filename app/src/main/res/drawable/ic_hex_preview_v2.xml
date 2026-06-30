@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hex color preview — 6 hex cells in 2 rows × 3 cols (handoff palette).
+     Pointy-top hexes, viewBox 100×80. Colors per handoff:
+     row1: #b71c1c · #4c1d95 · #064e3b · row2: #0c1a2e · #7c3aed · #1d4ed8 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp" android:height="96dp"
+    android:viewportWidth="100" android:viewportHeight="80">
+    <!-- row 1 (y center 22) -->
+    <path android:fillColor="#FFB71C1C"
+        android:pathData="M16,22 L24,17.5 L32,22 L32,30 L24,34.5 L16,30 Z" />
+    <path android:fillColor="#FF4C1D95"
+        android:pathData="M44,22 L52,17.5 L60,22 L60,30 L52,34.5 L44,30 Z" />
+    <path android:fillColor="#FF064E3B"
+        android:pathData="M72,22 L80,17.5 L88,22 L88,30 L80,34.5 L72,30 Z" />
+    <!-- row 2 offset (y center 49, x offset 14) -->
+    <path android:fillColor="#FF0C1A2E"
+        android:pathData="M30,49 L38,44.5 L46,49 L46,57 L38,61.5 L30,57 Z" />
+    <path android:fillColor="#FF7C3AED"
+        android:pathData="M58,49 L66,44.5 L74,49 L74,57 L66,61.5 L58,57 Z" />
+    <path android:fillColor="#FF1D4ED8"
+        android:pathData="M86,49 L94,44.5 L102,49 L102,57 L94,61.5 L86,57 Z" />
+</vector>

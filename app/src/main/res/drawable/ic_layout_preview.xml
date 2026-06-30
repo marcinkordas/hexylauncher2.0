@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layout preview icon: 7-hex flower (1 center + 6 surrounding) in distinct accent colors,
+     used in the Settings Hub hero tile to telegraph "customize layout" at a glance.
+     Pointy-top hexes, radius ~2.3 in a 24-unit viewport. Colors picked for vibrancy across
+     light & dark themes; no theme attrs so the icon stays multi-coloured. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp" android:height="64dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <!-- top-left -->
+    <path android:fillColor="#FFEB3B"
+        android:pathData="M8,7.4 L10,8.55 L10,10.85 L8,12 L6,10.85 L6,8.55 Z"/>
+    <!-- top -->
+    <path android:fillColor="#00BCD4"
+        android:pathData="M12,5.1 L14,6.25 L14,8.55 L12,9.7 L10,8.55 L10,6.25 Z"/>
+    <!-- top-right -->
+    <path android:fillColor="#4CAF50"
+        android:pathData="M16,7.4 L18,8.55 L18,10.85 L16,12 L14,10.85 L14,8.55 Z"/>
+    <!-- bottom-left -->
+    <path android:fillColor="#9C27B0"
+        android:pathData="M8,12 L10,13.15 L10,15.45 L8,16.6 L6,15.45 L6,13.15 Z"/>
+    <!-- center -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M12,9.7 L14,10.85 L14,13.15 L12,14.3 L10,13.15 L10,10.85 Z"/>
+    <!-- bottom-right -->
+    <path android:fillColor="#FF9800"
+        android:pathData="M16,12 L18,13.15 L18,15.45 L16,16.6 L14,15.45 L14,13.15 Z"/>
+    <!-- bottom -->
+    <path android:fillColor="#E91E63"
+        android:pathData="M12,14.3 L14,15.45 L14,17.75 L12,18.9 L10,17.75 L10,15.45 Z"/>
+</vector>

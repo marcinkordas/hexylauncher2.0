@@ -1,28 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- App Visibility: opaque gradient background, icon-rich list. UNCHECKED = HIDDEN
+     (icon greyed via alpha). The semantics inversion is reflected in AppVisibilityActivity's
+     adapter. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/settings_hub_bg"
     android:orientation="vertical"
     android:padding="16dp">
-    
+
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sort By"
-        android:textSize="16sp"
+        android:layout_marginTop="36dp"
+        android:layout_marginBottom="16dp"
+        android:text="App visibility"
+        android:textSize="26sp"
         android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-    
+        android:textColor="?attr/colorOnSurface" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:text="Sort by"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textAllCaps="true"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
     <Spinner
         android:id="@+id/spinnerSort"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp" />
-    
+        android:layout_marginBottom="14dp" />
+
     <ListView
         android:id="@+id/listApps"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
-        
+        android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="6dp" />
+
 </LinearLayout>

@@ -62,14 +62,16 @@ class MainActivity : AppCompatActivity() {
     // Registered in onCreate(), unregistered in onDestroy().
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
+            // Visual grid settings — the View caches these in fields, so we must call
+            // refreshSettings() (loadSettings + invalidate) rather than just invalidate().
             "hex_radius", "icon_size_multiplier", "icon_padding",
             "outline_width", "corner_radius", "show_outline",
             "show_labels", "show_notification_glow",
             "unified_bucket_colors", "tile_transparency" -> {
-                binding.hexGrid.invalidate()
+                binding.hexGrid.refreshSettings()
             }
             "dock_transparency" -> {
-                getCurrentDock().invalidate()
+                getCurrentDock().refreshSettings()
             }
             "dark_theme" -> {
                 if (editModeOverlay == null) recreate()
@@ -77,13 +79,18 @@ class MainActivity : AppCompatActivity() {
             }
             "hex_orientation"     -> recomputeGridAndInvalidate()
             "sort_order"          -> reloadAppsAndInvalidate()
-            "search_position"     -> repositionSearchBar()
-            "search_with_mic"     -> updateSearchMicButton()
+            "search_position"     -> {
+                // setupDock() un-hides the dock; suppress while Edit Mode is active so the
+                // dock doesn't re-appear over the toolbar pill. Effect lands on exitEditMode.
+                if (editModeOverlay == null) repositionSearchBar()
+            }
+            "search_with_mic"     -> if (editModeOverlay == null) updateSearchMicButton()
             "shortcut_icon_shape" -> {
                 com.hexgrid.launcher.util.SettingsManager.setIconCacheDirty(this, true)
-                binding.hexGrid.invalidate()
+                binding.hexGrid.refreshSettings()
             }
             "dim_status_bar"      -> applyStatusBarDim()
+            "wallpaper_opacity"   -> applyWallpaperOpacity()
         }
     }
 
@@ -94,6 +101,19 @@ class MainActivity : AppCompatActivity() {
             when (intent.action) {
                 Intent.ACTION_PACKAGE_REMOVED -> if (!isReplacing) viewModel.reloadApps()
                 Intent.ACTION_PACKAGE_ADDED -> viewModel.reloadApps()
+            }
+        }
+    }
+
+    // ── Package suspension receiver ───────────────────────────────────────────
+    // Fires for Samsung Modes "Work mode", Samsung Forest (Digital Wellbeing) app timers,
+    // enterprise policy suspensions, and parental controls. Required because Samsung
+    // does not reliably invoke LauncherApps.Callback.onPackagesSuspended for these flows.
+    private val packageSuspendReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_PACKAGES_SUSPENDED,
+                Intent.ACTION_PACKAGES_UNSUSPENDED -> viewModel.reloadApps()
             }
         }
     }
@@ -142,6 +162,14 @@ class MainActivity : AppCompatActivity() {
         override fun onShortcutsChanged(packageName: String, shortcuts: MutableList<ShortcutInfo>, user: UserHandle) {
             viewModel.reloadApps()
         }
+        // Suspension fast-path (API 28+). The broadcast receiver covers Samsung devices where
+        // these callbacks may not fire for Modes/Forest suspensions — both routes converge on reload.
+        override fun onPackagesSuspended(packageNames: Array<out String>?, user: UserHandle) {
+            viewModel.reloadApps()
+        }
+        override fun onPackagesUnsuspended(packageNames: Array<out String>?, user: UserHandle) {
+            viewModel.reloadApps()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -163,6 +191,18 @@ class MainActivity : AppCompatActivity() {
             addDataScheme("package")
         }
         registerReceiver(packageChangeReceiver, pkgFilter)
+
+        // Suspension broadcasts (no data scheme — system-wide, sent on suspend/unsuspend).
+        val suspendFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGES_SUSPENDED)
+            addAction(Intent.ACTION_PACKAGES_UNSUSPENDED)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(packageSuspendReceiver, suspendFilter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(packageSuspendReceiver, suspendFilter)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(installShortcutReceiver,
                 IntentFilter("com.android.launcher.action.INSTALL_SHORTCUT"), RECEIVER_EXPORTED)
@@ -192,7 +232,8 @@ class MainActivity : AppCompatActivity() {
                 HexGridCalculator(r, o)
             },
             containerWidth = { binding.hexGridContainer.width },
-            containerHeight = { binding.hexGridContainer.height }
+            containerHeight = { binding.hexGridContainer.height },
+            onLayoutChanged = { updateOccupiedCells() }
         )
 
         setupGrid()
@@ -207,6 +248,8 @@ class MainActivity : AppCompatActivity() {
         updateOccupiedCells()
 
         viewModel.loadApps()
+
+        applyWallpaperOpacity()
 
         // Handle placement intent if launched for widget placement
         handlePlacementIntent(intent)
@@ -233,6 +276,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         launcherAppsService.unregisterCallback(launcherAppsCallback)
         unregisterReceiver(packageChangeReceiver)
+        unregisterReceiver(packageSuspendReceiver)
         unregisterReceiver(installShortcutReceiver)
         unregisterReceiver(widgetRemovedReceiver)
     }
@@ -347,22 +391,19 @@ class MainActivity : AppCompatActivity() {
         val showDuringSearch = SettingsManager.getShowWidgetsDuringSearch(this)
         if (showDuringSearch) return  // always visible — no animation needed
 
+        val views = widgetManager.loadedViews()
+        if (views.isEmpty()) return  // no widgets to animate
+
         val targetAlpha = if (visible) 1f else 0f
+        val startAlpha = views.first().alpha
+        if (startAlpha == targetAlpha) return  // already at target — skip degenerate animation
+
         widgetFadeAnimator?.cancel()
-        widgetFadeAnimator = ValueAnimator.ofFloat(
-            widgetManager.loadedEntries()
-                .mapNotNull { binding.hexGridContainer.findViewWithTag<View>("widget_${it.widgetId}") }
-                .firstOrNull()?.alpha ?: (if (visible) 0f else 1f),
-            targetAlpha
-        ).apply {
+        widgetFadeAnimator = ValueAnimator.ofFloat(startAlpha, targetAlpha).apply {
             duration = 200
             addUpdateListener { anim ->
                 val alpha = anim.animatedValue as Float
-                widgetManager.loadedEntries().forEach { entry ->
-                    binding.hexGridContainer
-                        .findViewWithTag<View>("widget_${entry.widgetId}")
-                        ?.alpha = alpha
-                }
+                views.forEach { it.alpha = alpha }
             }
             start()
         }
@@ -417,6 +458,19 @@ class MainActivity : AppCompatActivity() {
      * In Edit Mode the effect is hidden behind the overlay — the Style panel
      * label "(applied on exit)" is a UX hint.
      */
+    /**
+     * Wallpaper opacity scrim. The activity theme has windowBackground=transparent so the
+     * device wallpaper shows behind the launcher. Painting an alpha-tinted black background
+     * on hexGridContainer (which sits in front of the wallpaper but behind hexGrid drawing)
+     * dims the wallpaper without modifying it. opacity=100 → fully transparent (full
+     * wallpaper); opacity=0 → fully black (wallpaper hidden).
+     */
+    private fun applyWallpaperOpacity() {
+        val opacity = SettingsManager.getWallpaperOpacity(this).coerceIn(0, 100)
+        val scrimAlpha = ((100 - opacity) * 2.55f).toInt().coerceIn(0, 255)
+        binding.hexGridContainer.setBackgroundColor(android.graphics.Color.argb(scrimAlpha, 0, 0, 0))
+    }
+
     private fun applyStatusBarDim() {
         val controller = androidx.core.view.WindowCompat
             .getInsetsController(window, binding.root)
@@ -440,6 +494,13 @@ class MainActivity : AppCompatActivity() {
         )
         binding.hexGridContainer.addView(overlay, params)
         editModeOverlay = overlay
+
+        // Keep the dock visible during Edit Mode so users can see where the search bar will land
+        // when they change its position. DockView sets elevation=8px (≈3dp); raise the overlay's
+        // elevation well above that so the toolbar pill paints on top of the dock when they
+        // overlap (search position = BOTTOM). Programmatic px guarantees the relationship is
+        // independent of theme attribute density math.
+        overlay.elevation = 16f * resources.displayMetrics.density
 
         androidx.core.view.ViewCompat.requestApplyInsets(overlay)
         overlay.show(com.hexgrid.launcher.ui.EditModeOverlay.Mode.SHAPE)

@@ -23,6 +23,8 @@ object SettingsManager {
     private const val KEY_UNIFIED_BUCKET_COLORS = "unified_bucket_colors"
     private const val KEY_TILE_TRANSPARENCY = "tile_transparency"
     private const val KEY_DOCK_TRANSPARENCY = "dock_transparency"
+    private const val KEY_WALLPAPER_OPACITY = "wallpaper_opacity"
+    private const val KEY_USE_WALLPAPER_ACCENT = "use_wallpaper_accent"
     private const val KEY_SHORTCUT_ICON_SHAPE = "shortcut_icon_shape"
     private const val KEY_ICON_CACHE_DIRTY = "icon_cache_dirty"
     private const val KEY_SHOW_WIDGETS_DURING_SEARCH = "show_widgets_during_search"
@@ -43,6 +45,7 @@ object SettingsManager {
     const val DEFAULT_UNIFIED_BUCKET_COLORS = false
     const val DEFAULT_TILE_TRANSPARENCY = 50  // 0-100 (50% = current behavior)
     const val DEFAULT_DOCK_TRANSPARENCY = 90  // 0-100 (90% = mostly opaque)
+    const val DEFAULT_WALLPAPER_OPACITY = 100 // 0-100 (100 = full wallpaper, 0 = full black scrim)
     
     // Min/Max ranges
     const val MIN_HEX_RADIUS = 50f
@@ -206,6 +209,18 @@ object SettingsManager {
     fun getDockTransparency(context: Context): Int = getPrefs(context).getInt(KEY_DOCK_TRANSPARENCY, DEFAULT_DOCK_TRANSPARENCY)
     fun setDockTransparency(context: Context, value: Int) {
         getPrefs(context).edit().putInt(KEY_DOCK_TRANSPARENCY, value.coerceIn(0, 100)).apply()
+    }
+
+    fun getWallpaperOpacity(context: Context): Int =
+        getPrefs(context).getInt(KEY_WALLPAPER_OPACITY, DEFAULT_WALLPAPER_OPACITY)
+    fun setWallpaperOpacity(context: Context, value: Int) {
+        getPrefs(context).edit().putInt(KEY_WALLPAPER_OPACITY, value.coerceIn(0, 100)).apply()
+    }
+
+    fun getUseWallpaperAccent(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_USE_WALLPAPER_ACCENT, false)
+    fun setUseWallpaperAccent(context: Context, value: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_USE_WALLPAPER_ACCENT, value).apply()
     }
 
     // Shortcut Icon Shape (SQUARE / SQUIRCLE / CIRCLE)

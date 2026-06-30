@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Exit button — pure ink block in Neo-Swiss aesthetic. White text on ink reads as
+     "primary action" without resorting to a candy-red distraction. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="6dp" />
+    <solid android:color="#FF0A0A0A" />
+</shape>

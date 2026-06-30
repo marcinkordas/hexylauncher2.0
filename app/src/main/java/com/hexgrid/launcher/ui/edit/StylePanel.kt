@@ -34,6 +34,13 @@ class StylePanel(private val context: Context) : EditPanel {
     }
 
     private fun setup(binding: PanelStyleBinding) {
+        val accent = com.hexgrid.launcher.util.WallpaperAccent.resolve(context)
+        val accentList = android.content.res.ColorStateList.valueOf(accent)
+        listOf(
+            binding.sliderTileTransparency, binding.sliderDockTransparency,
+            binding.sliderWallpaperOpacity
+        ).forEach { it.trackActiveTintList = accentList }
+
         binding.switchShowOutline.isChecked = SettingsManager.getShowOutline(context)
         binding.switchShowOutline.setOnCheckedChangeListener { _, v ->
             SettingsManager.setShowOutline(context, v)
@@ -54,7 +61,7 @@ class StylePanel(private val context: Context) : EditPanel {
             SettingsManager.setDarkTheme(context, v)
         }
 
-        binding.sliderTileTransparency.value = SettingsManager.getTileTransparency(context).toFloat()
+        binding.sliderTileTransparency.setValueSafe(SettingsManager.getTileTransparency(context).toFloat())
         binding.sliderTileTransparency.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setTileTransparency(context, value.toInt())
@@ -63,7 +70,16 @@ class StylePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderDockTransparency.value = SettingsManager.getDockTransparency(context).toFloat()
+        binding.sliderWallpaperOpacity.setValueSafe(SettingsManager.getWallpaperOpacity(context).toFloat())
+        binding.sliderWallpaperOpacity.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                SettingsManager.setWallpaperOpacity(context, value.toInt())
+                ViewCompat.setAccessibilityDelegate(binding.sliderWallpaperOpacity,
+                    sliderDelegate("Wallpaper opacity: ${value.toInt()}%"))
+            }
+        }
+
+        binding.sliderDockTransparency.setValueSafe(SettingsManager.getDockTransparency(context).toFloat())
         binding.sliderDockTransparency.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setDockTransparency(context, value.toInt())
@@ -75,6 +91,11 @@ class StylePanel(private val context: Context) : EditPanel {
         binding.switchUnifiedBucketColors.isChecked = SettingsManager.getUnifiedBucketColors(context)
         binding.switchUnifiedBucketColors.setOnCheckedChangeListener { _, v ->
             SettingsManager.setUnifiedBucketColors(context, v)
+        }
+
+        binding.switchUseWallpaperAccent.isChecked = SettingsManager.getUseWallpaperAccent(context)
+        binding.switchUseWallpaperAccent.setOnCheckedChangeListener { _, v ->
+            SettingsManager.setUseWallpaperAccent(context, v)
         }
 
         when (SettingsManager.getShortcutIconShape(context)) {

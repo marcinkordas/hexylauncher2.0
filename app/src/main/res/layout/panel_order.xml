@@ -4,10 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/tile_squircle_secondary"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:elevation="4dp">
+    android:orientation="vertical">
 
     <!-- Sort order chips -->
     <TextView
@@ -15,42 +12,50 @@
         android:layout_height="wrap_content"
         android:text="Sort order"
         android:textAppearance="?attr/textAppearanceLabelMedium" />
-    <com.google.android.material.button.MaterialButtonToggleGroup
+    <!-- ChipGroup wraps onto a second row instead of cropping the 4th chip the way
+         MaterialButtonToggleGroup did when the natural width exceeded the panel. -->
+    <com.google.android.material.chip.ChipGroup
         android:id="@+id/toggleSortOrder"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         app:singleSelection="true"
-        app:selectionRequired="true">
+        app:selectionRequired="true"
+        app:chipSpacingHorizontal="6dp"
+        app:chipSpacingVertical="6dp">
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.chip.Chip
             android:id="@+id/btnSortName"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Name" />
+            android:text="Name"
+            android:checkable="true" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.chip.Chip
             android:id="@+id/btnSortFrequency"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Frequency" />
+            android:text="Frequency"
+            android:checkable="true" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.chip.Chip
             android:id="@+id/btnSortTime"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Time" />
+            android:text="Time"
+            android:checkable="true" />
 
-        <com.google.android.material.button.MaterialButton
+        <com.google.android.material.chip.Chip
             android:id="@+id/btnSortNotifications"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Notifications" />
-    </com.google.android.material.button.MaterialButtonToggleGroup>
+            android:text="Notifications"
+            android:checkable="true" />
+    </com.google.android.material.chip.ChipGroup>
 
     <!-- Search position chips -->
     <TextView

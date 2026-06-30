@@ -2,4 +2,33 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- HexGrid Redesign v2 design tokens — violet/cyan dark theme -->
+    <color name="hg_bg">#FF040410</color>
+    <color name="hg_surface">#FF0D0D1E</color>
+    <color name="hg_surface_alt">#FF0B0B1E</color>
+    <color name="hg_accent">#FF7C5CFC</color>
+    <color name="hg_accent_b">#FF00D4FF</color>
+
+    <color name="hg_text_1">#FFF0F0FF</color>
+    <color name="hg_text_2">#FF9898C0</color>
+    <color name="hg_text_3">#FF40405E</color>
+    <color name="hg_text_4">#FF36366A</color>
+
+    <color name="hg_divider">#0EFFFFFF</color>
+    <color name="hg_border_subtle">#12FFFFFF</color>
+    <color name="hg_border_accent">#617C5CFC</color>
+
+    <color name="hg_close_bg">#1AFF3C3C</color>
+    <color name="hg_close_border">#38FF3C3C</color>
+    <color name="hg_close_fg">#FFFF6868</color>
+
+    <color name="hg_tab_active_bg">#217C5CFC</color>
+    <color name="hg_tab_active_border">#387C5CFC</color>
+    <color name="hg_tab_active_fg">#FFE8E8FF</color>
+    <color name="hg_tab_inactive_fg">#FF3A3A58</color>
+
+    <color name="hg_track_unfilled">#12FFFFFF</color>
+    <color name="hg_value_badge_bg">#217C5CFC</color>
+    <color name="hg_value_badge_border">#457C5CFC</color>
 </resources>

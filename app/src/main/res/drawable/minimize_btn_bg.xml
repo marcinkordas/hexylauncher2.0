@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimize button — tonal accent circle (sibling to red close button). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#1A7C5CFC" />
+    <stroke android:width="1dp" android:color="#387C5CFC" />
+</shape>

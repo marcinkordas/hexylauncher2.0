@@ -1,213 +1,609 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Settings Hub — HexGrid Redesign v2 (handoff). Dark violet/cyan, gradient-bordered cards,
+     atmospheric glows, hero with overlapping hex color preview. All design tokens come from
+     docs/handoff/design_handoff_hexgrid/README.md. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@color/hg_bg">
 
-    <LinearLayout
+    <!-- Atmospheric violet glow — top-left corner, blurred radial. -->
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_marginStart="-60dp"
+        android:layout_marginTop="-60dp"
+        android:background="@drawable/hg_glow_violet"
+        android:importantForAccessibility="no" />
+
+    <!-- Atmospheric cyan glow — top-right, slightly lower. -->
+    <View
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="end"
+        android:layout_marginEnd="-80dp"
+        android:layout_marginTop="100dp"
+        android:background="@drawable/hg_glow_cyan"
+        android:importantForAccessibility="no" />
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
-        <!-- Hero tile: "Customize layout" → enters Edit Mode -->
-        <FrameLayout
-            android:id="@+id/tileHero"
-            android:layout_width="match_parent"
-            android:layout_height="160dp"
-            android:background="@drawable/tile_squircle_primary"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="Customize layout"
-            android:layout_marginBottom="16dp">
-
-            <ImageView
-                android:layout_width="55dp"
-                android:layout_height="55dp"
-                android:layout_gravity="center"
-                android:src="@drawable/hex_slot_filled"
-                android:contentDescription="@null"
-                android:importantForAccessibility="no" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="16dp"
-                android:text="Customize layout"
-                android:textColor="?attr/colorOnPrimary"
-                android:textAppearance="?attr/textAppearanceTitleMedium" />
-        </FrameLayout>
-
-        <!-- 3-column action tile grid -->
-        <GridLayout
-            android:id="@+id/tileGrid"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="3"
-            android:useDefaultMargins="false">
+            android:orientation="vertical"
+            android:paddingTop="56dp"
+            android:paddingBottom="40dp">
 
-            <!-- Tile 1: Widgets -->
-            <FrameLayout
-                android:id="@+id/tileWidgets"
-                android:layout_width="0dp"
+            <!-- Header row: title block + app icon badge top-right -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
+                android:orientation="horizontal"
+                android:gravity="top"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/space_grotesk"
+                        android:text="Settings"
+                        android:textColor="@color/hg_text_1"
+                        android:textSize="38sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="-0.04"
+                        android:lineSpacingMultiplier="1.0" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Tune your launcher"
+                        android:textColor="#FF383862"
+                        android:textSize="13.5sp" />
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/hg_app_badge_bg">
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_hex_badge"
+                        android:importantForAccessibility="no" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- Customize Hero card -->
+            <FrameLayout
+                android:id="@+id/tileHero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="18dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="18dp"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/hub_hero_bg"
                 android:clickable="true"
                 android:focusable="true"
-                android:contentDescription="Widgets"
-                android:padding="12dp">
+                android:contentDescription="Customize layout"
+                android:paddingTop="22dp"
+                android:paddingBottom="20dp"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp">
 
+                <!-- Hex color preview — overlapping right edge, slight rotation feel via offset -->
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center_horizontal|top"
-                    android:src="@drawable/hex_slot_outline"
+                    android:layout_width="160dp"
+                    android:layout_height="128dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="-8dp"
+                    android:layout_marginEnd="-16dp"
+                    android:alpha="0.55"
+                    android:src="@drawable/ic_hex_preview_v2"
                     android:importantForAccessibility="no" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Widgets"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="10dp"
+                        android:text="CUSTOMIZE"
+                        android:textColor="#CC7C5CFC"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.25" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/space_grotesk"
+                        android:text="Make it yours"
+                        android:textColor="#FFD8F0FF"
+                        android:textSize="30sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="-0.027" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Shape · Style · Order"
+                        android:textColor="#A6A096DC"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Open Edit Mode"
+                            android:textColor="#CC7C5CFC"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="→"
+                            android:textColor="#CC7C5CFC"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </LinearLayout>
             </FrameLayout>
 
-            <!-- Tile 2: Manage Apps -->
-            <FrameLayout
-                android:id="@+id/tileManageApps"
-                android:layout_width="0dp"
+            <!-- ─────────── TOOLS ─────────── -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Manage Apps"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Manage Apps"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
-            </FrameLayout>
-
-            <!-- Tile 3: Permissions (badge dot optional) -->
-            <FrameLayout
-                android:id="@+id/tilePermissions"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Permissions"
-                android:padding="12dp">
-
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:layout_marginBottom="12dp">
                 <View
-                    android:id="@+id/badgePermissions"
-                    android:layout_width="8dp"
-                    android:layout_height="8dp"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="4dp"
-                    android:background="?attr/colorError"
-                    android:importantForAccessibility="no"
-                    android:visibility="gone" />
-
+                    android:layout_width="4dp"
+                    android:layout_height="4dp"
+                    android:background="@drawable/hg_section_dot" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Permissions"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
-            </FrameLayout>
+                    android:layout_marginStart="8dp"
+                    android:text="TOOLS"
+                    android:textColor="@color/hg_text_4"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.18" />
+            </LinearLayout>
 
-            <!-- Tile 4: Default Launcher (badge dot optional) -->
-            <FrameLayout
-                android:id="@+id/tileDefaultLauncher"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Default Launcher"
-                android:padding="12dp">
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:layout_marginBottom="24dp">
 
+                <!-- Widgets -->
+                <FrameLayout
+                    android:id="@+id/tileWidgets"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Widgets">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_widgets"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_widget_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="WIDGETS"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Place on launcher"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- App Visibility -->
+                <FrameLayout
+                    android:id="@+id/tileManageApps"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="App visibility">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_apps"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_apps_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="APP VISIBILITY"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Show or hide apps"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- ─────────── SYSTEM ─────────── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:layout_marginBottom="12dp">
                 <View
-                    android:id="@+id/badgeDefaultLauncher"
-                    android:layout_width="8dp"
-                    android:layout_height="8dp"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="4dp"
-                    android:background="?attr/colorError"
-                    android:importantForAccessibility="no"
-                    android:visibility="gone" />
-
+                    android:layout_width="4dp"
+                    android:layout_height="4dp"
+                    android:background="@drawable/hg_section_dot" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Default Launcher"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
-            </FrameLayout>
+                    android:layout_marginStart="8dp"
+                    android:text="SYSTEM"
+                    android:textColor="@color/hg_text_4"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.18" />
+            </LinearLayout>
 
-            <!-- Tile 5: Export -->
-            <FrameLayout
-                android:id="@+id/tileExport"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Export settings"
-                android:padding="12dp">
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:layout_marginBottom="24dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <FrameLayout
+                    android:id="@+id/tilePermissions"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Export"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
-            </FrameLayout>
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Permissions">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_permissions"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_permissions_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <View
+                            android:id="@+id/badgePermissions"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:background="@color/hg_accent"
+                            android:visibility="gone" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="PERMISSIONS"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Manage access"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
 
-            <!-- Tile 6: Import -->
-            <FrameLayout
-                android:id="@+id/tileImport"
-                android:layout_width="0dp"
+                <FrameLayout
+                    android:id="@+id/tileDefaultLauncher"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Default home">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_default"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_home_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <View
+                            android:id="@+id/badgeDefaultLauncher"
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:layout_marginBottom="4dp"
+                            android:background="@color/hg_accent"
+                            android:visibility="gone" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="DEFAULT HOME"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Set as default"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
+            </LinearLayout>
+
+            <!-- ─────────── BACKUP ─────────── -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="4dp"
-                android:minHeight="88dp"
-                android:background="@drawable/tile_squircle_secondary"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Import settings"
-                android:padding="12dp">
-
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:layout_marginBottom="12dp">
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="4dp"
+                    android:background="@drawable/hg_section_dot" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|center_horizontal"
-                    android:text="Import"
-                    android:textAppearance="?attr/textAppearanceLabelSmall" />
-            </FrameLayout>
+                    android:layout_marginStart="8dp"
+                    android:text="BACKUP"
+                    android:textColor="@color/hg_text_4"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.18" />
+            </LinearLayout>
 
-        </GridLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:layout_marginBottom="24dp">
 
-    </LinearLayout>
-</ScrollView>
+                <FrameLayout
+                    android:id="@+id/tileExport"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Backup">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_export"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_export_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="BACKUP"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Save layout"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/tileImport"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/hub_tile_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Restore">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="18dp"
+                        android:paddingBottom="18dp">
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginBottom="12dp"
+                            android:background="@drawable/icon_circle_import"
+                            android:elevation="6dp">
+                            <ImageView
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_import_24"
+                                android:tint="#FFFFFFFF"
+                                android:importantForAccessibility="no" />
+                        </FrameLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/space_grotesk"
+                            android:text="RESTORE"
+                            android:textColor="#FFD8D8F0"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.07" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="Load layout"
+                            android:textColor="#FF3A3A5A"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </FrameLayout>
+            </LinearLayout>
+
+            <View
+                android:id="@+id/tileGrid"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

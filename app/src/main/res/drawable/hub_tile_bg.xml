@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gradient-border card (handoff pattern):
+       outer 1dp violet→white-fade gradient ring → inner #0d0d1e fill at 19dp radius.
+     Replicated in XML using a layer-list with shape inset. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="20dp" />
+            <gradient
+                android:angle="315"
+                android:startColor="#2D7C5CFC"
+                android:centerColor="#12FFFFFF"
+                android:endColor="#00000000"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item
+        android:left="1dp" android:top="1dp" android:right="1dp" android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="19dp" />
+            <solid android:color="@color/hg_surface" />
+        </shape>
+    </item>
+</layer-list>

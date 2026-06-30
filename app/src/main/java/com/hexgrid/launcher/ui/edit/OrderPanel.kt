@@ -38,13 +38,15 @@ class OrderPanel(private val context: Context) : EditPanel {
             SettingsManager.SortOrder.NOTIFICATION_COUNT ->
                 binding.toggleSortOrder.check(R.id.btnSortNotifications)
         }
-        binding.toggleSortOrder.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val order = when (checkedId) {
+        // ChipGroup (singleSelection + selectionRequired) yields 0 or 1 entries in the
+        // checkedIds list — empty would only fire if selectionRequired were false.
+        binding.toggleSortOrder.setOnCheckedStateChangeListener { _, checkedIds ->
+            val order = when (checkedIds.firstOrNull()) {
                 R.id.btnSortName          -> SettingsManager.SortOrder.NAME
                 R.id.btnSortFrequency     -> SettingsManager.SortOrder.USAGE_FREQUENCY
                 R.id.btnSortTime          -> SettingsManager.SortOrder.USAGE_TIME
-                else                      -> SettingsManager.SortOrder.NOTIFICATION_COUNT
+                R.id.btnSortNotifications -> SettingsManager.SortOrder.NOTIFICATION_COUNT
+                else                      -> return@setOnCheckedStateChangeListener
             }
             SettingsManager.setSortOrder(context, order)
         }
