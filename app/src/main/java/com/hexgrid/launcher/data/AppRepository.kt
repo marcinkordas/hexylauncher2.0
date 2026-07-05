@@ -11,6 +11,7 @@ import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import androidx.core.graphics.drawable.toBitmap
 import com.hexgrid.launcher.util.ColorExtractor
 import com.hexgrid.launcher.util.SettingsManager
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,24 @@ class AppRepository(private val context: Context) {
 
     // Memory cache to prevent sluggish reloading
     private var cachedApps: List<AppInfo>? = null
+
+    /**
+     * Icons are decoded by the platform at their native asset resolution — an
+     * AdaptiveIconDrawable in particular carries full foreground+background layers
+     * (often 300-450px on high-density screens) regardless of how large it's ever
+     * actually drawn. The largest an icon can appear on screen is in the hex grid,
+     * capped at hexRadius * 1.1 * iconSizeMultiplier (see [HexagonalGridView] and
+     * [SettingsManager.MAX_HEX_RADIUS] / [SettingsManager.MAX_ICON_SIZE_MULTIPLIER]).
+     * Rasterizing every icon down to that worst-case pixel size once at load time
+     * (instead of retaining native-resolution drawables for every installed app for
+     * the process lifetime) avoids holding several hundred KB of unused pixels per
+     * icon. Never upscales an icon that's already smaller than this.
+     */
+    private val maxIconRenderSizePx: Int by lazy {
+        kotlin.math.ceil(
+            SettingsManager.MAX_HEX_RADIUS * 1.1f * SettingsManager.MAX_ICON_SIZE_MULTIPLIER
+        ).toInt()
+    }
 
     fun invalidateCache() {
         cachedApps = null
@@ -68,13 +87,15 @@ class AppRepository(private val context: Context) {
                 val rawIcon: Drawable = ri.loadIcon(packageManager)
                 // Apply squircle/circle mask to non-adaptive icons (WebAPKs, old apps)
                 // AdaptiveIconDrawable icons are already shaped by the system (Samsung squircle etc.)
-                val icon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
+                val maskedIcon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
                     applyIconMask(rawIcon, cornerRadiusRatio)
                 } else {
                     rawIcon
                 }
-
-                val (dominantColor, bucket) = ColorExtractor.extractColor(icon, packageName)
+                // Extract color from the pre-rasterized drawable so bucketing/sorting
+                // output is unaffected by the memory-saving downsample below.
+                val (dominantColor, bucket) = ColorExtractor.extractColor(maskedIcon, packageName)
+                val icon = rasterizeIcon(maskedIcon)
                 val stats = usageStats[packageName]
 
                 val notifCount = com.hexgrid.launcher.service.NotificationListener.getNotificationCount(packageName)
@@ -107,13 +128,15 @@ class AppRepository(private val context: Context) {
                     try {
                         val rawIcon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi)
                             ?: context.packageManager.getApplicationIcon(shortcut.`package`)
-                        val icon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
+                        val maskedIcon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {
                             applyIconMask(rawIcon, cornerRadiusRatio)
                         } else {
                             rawIcon
                         }
-
-                        val (dominantColor, bucket) = ColorExtractor.extractColor(icon, shortcut.`package`)
+                        // Extract color from the pre-rasterized drawable so bucketing/sorting
+                        // output is unaffected by the memory-saving downsample below.
+                        val (dominantColor, bucket) = ColorExtractor.extractColor(maskedIcon, shortcut.`package`)
+                        val icon = rasterizeIcon(maskedIcon)
                         val shortcutKey = "${shortcut.`package`}_${shortcut.id}"
                         val stats = usageStats[shortcutKey]
 
@@ -153,7 +176,7 @@ class AppRepository(private val context: Context) {
      * [cornerRadiusRatio] is 0.3 for squircle, 0.5 for circle.
      */
     private fun applyIconMask(drawable: Drawable, cornerRadiusRatio: Float): Drawable {
-        val size = (drawable.intrinsicWidth.takeIf { it > 0 } ?: 192).coerceIn(48, 512)
+        val size = (drawable.intrinsicWidth.takeIf { it > 0 } ?: 192).coerceIn(48, maxIconRenderSizePx)
 
         val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output) // software canvas — clipPath always works
@@ -168,6 +191,31 @@ class AppRepository(private val context: Context) {
         drawable.draw(canvas)
 
         return BitmapDrawable(context.resources, output)
+    }
+
+    /**
+     * Flattens an icon Drawable to a single bitmap no larger than
+     * [maxIconRenderSizePx] on its longer side. AdaptiveIconDrawable is always
+     * flattened — it holds separate foreground/background layers at native asset
+     * resolution regardless of its reported intrinsic size. Plain drawables that
+     * are already within bounds are returned unchanged to avoid a pointless extra
+     * draw pass. Never upscales, so an icon that's already smaller stays untouched.
+     */
+    private fun rasterizeIcon(drawable: Drawable): Drawable {
+        if (drawable !is AdaptiveIconDrawable) {
+            val iw = drawable.intrinsicWidth
+            val ih = drawable.intrinsicHeight
+            if (iw in 1..maxIconRenderSizePx && ih in 1..maxIconRenderSizePx) return drawable
+        }
+
+        val iw = drawable.intrinsicWidth.takeIf { it > 0 } ?: maxIconRenderSizePx
+        val ih = drawable.intrinsicHeight.takeIf { it > 0 } ?: maxIconRenderSizePx
+        val scale = minOf(maxIconRenderSizePx.toFloat() / iw, maxIconRenderSizePx.toFloat() / ih, 1f)
+        val width = (iw * scale).toInt().coerceAtLeast(1)
+        val height = (ih * scale).toInt().coerceAtLeast(1)
+
+        val bitmap = drawable.toBitmap(width, height, Bitmap.Config.ARGB_8888)
+        return BitmapDrawable(context.resources, bitmap)
     }
 
     fun launchApp(app: AppInfo, context: Context) {
