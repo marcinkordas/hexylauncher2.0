@@ -54,7 +54,7 @@ class StylePanel(private val context: Context) : EditPanel {
             SettingsManager.setDarkTheme(context, v)
         }
 
-        binding.sliderTileTransparency.value = SettingsManager.getTileTransparency(context).toFloat()
+        binding.sliderTileTransparency.setValueSafely(SettingsManager.getTileTransparency(context).toFloat())
         binding.sliderTileTransparency.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setTileTransparency(context, value.toInt())
@@ -63,7 +63,7 @@ class StylePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderDockTransparency.value = SettingsManager.getDockTransparency(context).toFloat()
+        binding.sliderDockTransparency.setValueSafely(SettingsManager.getDockTransparency(context).toFloat())
         binding.sliderDockTransparency.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setDockTransparency(context, value.toInt())

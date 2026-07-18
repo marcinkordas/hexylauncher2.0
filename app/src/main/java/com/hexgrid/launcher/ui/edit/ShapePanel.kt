@@ -34,7 +34,7 @@ class ShapePanel(private val context: Context) : EditPanel {
     }
 
     private fun setup(binding: PanelShapeBinding) {
-        binding.sliderHexRadius.value = SettingsManager.getHexRadius(context)
+        binding.sliderHexRadius.setValueSafely(SettingsManager.getHexRadius(context))
         binding.sliderHexRadius.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setHexRadius(context, value)
@@ -45,7 +45,7 @@ class ShapePanel(private val context: Context) : EditPanel {
         ViewCompat.setAccessibilityDelegate(binding.sliderHexRadius,
             sliderDelegate("Hex radius: ${SettingsManager.getHexRadius(context).toInt()}dp"))
 
-        binding.sliderIconSize.value = SettingsManager.getIconSizeMultiplier(context)
+        binding.sliderIconSize.setValueSafely(SettingsManager.getIconSizeMultiplier(context))
         binding.sliderIconSize.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setIconSizeMultiplier(context, value)
@@ -54,7 +54,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderIconPadding.value = SettingsManager.getIconPadding(context)
+        binding.sliderIconPadding.setValueSafely(SettingsManager.getIconPadding(context))
         binding.sliderIconPadding.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setIconPadding(context, value)
@@ -63,7 +63,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderOutlineWidth.value = SettingsManager.getOutlineWidth(context)
+        binding.sliderOutlineWidth.setValueSafely(SettingsManager.getOutlineWidth(context))
         binding.sliderOutlineWidth.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setOutlineWidth(context, value)
@@ -72,7 +72,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderCornerRadius.value = SettingsManager.getCornerRadius(context)
+        binding.sliderCornerRadius.setValueSafely(SettingsManager.getCornerRadius(context))
         binding.sliderCornerRadius.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setCornerRadius(context, value)
