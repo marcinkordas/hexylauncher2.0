@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HexGrid Launcher — Redesign v2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    #root { height: 100%; }
+    button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 0; }
+  </style>
+</head>
+<body>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+
+// ── HELPER ────────────────────────────────────────────────────────
+const hexPts = (cx, cy, r, flat = false) =>
+  Array.from({ length: 6 }, (_, i) => {
+    const a = (Math.PI / 3) * i + (flat ? 0 : Math.PI / 6);
+    return `${(cx + r * Math.cos(a)).toFixed(2)},${(cy + r * Math.sin(a)).toFixed(2)}`;
+  }).join(' ');
+
+// ── GRAIN OVERLAY ─────────────────────────────────────────────────
+const GRAIN_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E";
+function GrainOverlay({ opacity = 0.028 }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 20,
+      opacity, mixBlendMode: 'overlay',
+      backgroundImage: `url("${GRAIN_URL}")`,
+      backgroundRepeat: 'repeat', backgroundSize: '250px 250px'
+    }} />
+  );
+}
+
+// ── STATUS BAR ────────────────────────────────────────────────────
+function StatusBar({ time = '16:17' }) {
+  return (
+    <div style={{
+      height: 40, display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', padding: '0 22px',
+      color: 'rgba(255,255,255,0.78)', fontSize: 13,
+      fontFamily: 'DM Sans,sans-serif', fontWeight: 600, flexShrink: 0
+    }}>
+      <span>{time}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor">
+          <path d="M8 8.2a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/>
+          <path d="M4.2 5.4a5.5 5.5 0 017.6 0l-1.4 1.4a3.5 3.5 0 00-4.8 0L4.2 5.4z" opacity=".7"/>
+          <path d="M1.1 2.5a9.5 9.5 0 0113.8 0L13.4 3.9a7.5 7.5 0 00-10.8 0L1.1 2.5z" opacity=".4"/>
+        </svg>
+        <svg width="13" height="11" viewBox="0 0 13 11" fill="currentColor">
+          <rect x="0" y="7" width="2.2" height="4" rx=".4"/>
+          <rect x="3.6" y="4.5" width="2.2" height="6.5" rx=".4"/>
+          <rect x="7.2" y="2" width="2.2" height="9" rx=".4"/>
+          <rect x="10.8" y="0" width="2.2" height="11" rx=".4"/>
+        </svg>
+        <svg width="23" height="11" viewBox="0 0 23 11" fill="none">
+          <rect x=".5" y=".5" width="19" height="10" rx="1.5" stroke="currentColor" strokeOpacity=".55"/>
+          <rect x="20" y="3.5" width="2.5" height="4" rx="1" fill="currentColor" opacity=".5"/>
+          <rect x="1.5" y="1.5" width="15" height="8" rx="1" fill="currentColor" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ── HEX BACKGROUND v2 (icon shapes, no text) ──────────────────────
+const BG_APPS = [
+  [0,0,'#b71c1c'],[0,3,'#111827'],
+  [1,0,'#1e1b4b'],[1,1,'#4c1d95'],[1,2,'#1f2937'],
+  [2,0,'#7f1d1d'],[2,1,'#0f0f0f'],[2,2,'#000000'],[2,3,'#064e3b'],
+  [3,0,'#1e1b4b'],[3,1,'#2e1065'],[3,2,'#0c1a2e'],[3,3,'#1e1b4b'],[3,4,'#052e16'],
+];
+
+function HexBackground() {
+  const SZ = 46, W = SZ * Math.sqrt(3), H = SZ * 2;
+  const map = {};
+  BG_APPS.forEach(([r, c, bg]) => { map[`${r},${c}`] = bg; });
+
+  const cells = [];
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 5; col++) {
+      const x = W * col + (row % 2 === 1 ? W / 2 : 0) + W * 0.58;
+      const y = H * 0.75 * row + SZ + 8;
+      cells.push({ row, col, x, y, bg: map[`${row},${col}`] || null });
+    }
+  }
+
+  return (
+    <svg width="390" height="330" style={{ position: 'absolute', top: 0, left: 0 }}>
+      <defs>
+        {cells.map(({ row, col, x, y }) => (
+          <clipPath key={`cp-${row}-${col}`} id={`hcp-${row}-${col}`}>
+            <polygon points={hexPts(x, y, SZ - 4)} />
+          </clipPath>
+        ))}
+      </defs>
+      {cells.map(({ row, col, x, y, bg }) => (
+        <g key={`${row},${col}`}>
+          {bg ? (
+            <>
+              <g clipPath={`url(#hcp-${row}-${col})`}>
+                <rect x={x - SZ} y={y - SZ} width={SZ * 2} height={SZ * 2} fill={bg} />
+                <ellipse cx={x - 4} cy={y - SZ * 0.25} rx={SZ * 0.55} ry={SZ * 0.38}
+                  fill="rgba(255,255,255,0.07)" />
+              </g>
+              <polygon points={hexPts(x, y, SZ - 3)} fill="none"
+                stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+            </>
+          ) : (
+            <polygon points={hexPts(x, y, SZ - 3)}
+              fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ── SLIDER v2 (thicker, tick marks, stronger accent) ──────────────
+function HexSlider({ label, value, min = 0, max = 100, onChange, accent, cyan }) {
+  const trackRef = useRef(null);
+  const pct = ((value - min) / (max - min)) * 100;
+  const move = (clientX) => {
+    if (!trackRef.current) return;
+    const r = trackRef.current.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    onChange(Math.round(min + p * (max - min)));
+  };
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span style={{ color: '#9898c0', fontSize: 13, fontWeight: 500 }}>{label}</span>
+        <span style={{
+          background: `${accent}22`, border: `1px solid ${accent}44`,
+          color: '#f0f0ff', fontSize: 12, fontWeight: 700,
+          fontFamily: 'Space Grotesk,sans-serif',
+          padding: '3px 11px', borderRadius: 8, minWidth: 40, textAlign: 'center',
+          letterSpacing: 0.3
+        }}>{value}</span>
+      </div>
+      {/* Track area with tick marks */}
+      <div style={{ position: 'relative', paddingBottom: 14 }}>
+        <div ref={trackRef}
+          onMouseDown={e => { e.preventDefault(); move(e.clientX); }}
+          onMouseMove={e => { if (e.buttons === 1) move(e.clientX); }}
+          onTouchStart={e => move(e.touches[0].clientX)}
+          onTouchMove={e => { e.preventDefault(); move(e.touches[0].clientX); }}
+          style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.07)', position: 'relative', cursor: 'pointer' }}>
+          {/* Filled track */}
+          <div style={{
+            position: 'absolute', inset: '0 auto 0 0', width: `${pct}%`,
+            background: `linear-gradient(to right, ${accent}, ${cyan})`, borderRadius: 999
+          }} />
+          {/* Thumb */}
+          <div style={{
+            position: 'absolute', top: '50%', left: `${pct}%`,
+            transform: 'translate(-50%,-50%)',
+            width: 22, height: 22, borderRadius: '50%', background: '#fff',
+            boxShadow: `0 0 0 4px ${accent}28, 0 0 18px ${accent}60, 0 2px 8px rgba(0,0,0,0.6)`,
+            pointerEvents: 'none', zIndex: 2
+          }} />
+        </div>
+        {/* Tick marks */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6 }}>
+          {[0, 25, 50, 75, 100].map(t => (
+            <div key={t} style={{
+              fontSize: 9.5, color: pct >= t ? `${accent}88` : 'rgba(255,255,255,0.14)',
+              fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600, lineHeight: 1,
+              transition: 'color 0.15s'
+            }}>{t === 0 ? min : t === 100 ? max : ''}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ORIENTATION PICKER ────────────────────────────────────────────
+function OrientPicker({ value, onChange, accent }) {
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ color: '#9898c0', fontSize: 13, fontWeight: 500, marginBottom: 10 }}>Hex orientation</div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        {[{ id: 'pointy', flat: false }, { id: 'flat', flat: true }].map(({ id, flat }) => (
+          <button key={id} onClick={() => onChange(id)} style={{
+            flex: 1, padding: '14px 0', borderRadius: 14, cursor: 'pointer',
+            border: value === id ? `1.5px solid ${accent}` : '1.5px solid rgba(255,255,255,0.08)',
+            background: value === id ? `${accent}16` : 'rgba(255,255,255,0.025)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+            transition: 'all 0.2s'
+          }}>
+            <svg width="52" height="52" viewBox="0 0 52 52">
+              <polygon points={hexPts(26, 26, 21, flat)}
+                fill={value === id ? `${accent}28` : 'rgba(255,255,255,0.03)'}
+                stroke={value === id ? accent : 'rgba(255,255,255,0.18)'} strokeWidth="1.5" />
+            </svg>
+            <span style={{ color: value === id ? '#e0e0ff' : '#505070', fontSize: 11, fontWeight: 700, textTransform: 'capitalize' }}>
+              {id}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SUB-SECTION LABEL ─────────────────────────────────────────────
+function SubLabel({ children, accent }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, marginTop: 4
+    }}>
+      <div style={{ width: 3, height: 14, borderRadius: 2, background: accent, opacity: 0.7, flexShrink: 0 }} />
+      <span style={{ fontSize: 10.5, fontWeight: 700, color: '#5a5a80', letterSpacing: 1.4, textTransform: 'uppercase' }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+// ── TAB CONTENT: SHAPE ────────────────────────────────────────────
+function ShapeTab({ accent, cyan }) {
+  const [vals, setVals] = useState({ radius: 72, iconSize: 52, padding: 40, outline: 15, corner: 95 });
+  const [orient, setOrient] = useState('pointy');
+  const set = k => v => setVals(s => ({ ...s, [k]: v }));
+  return (
+    <div>
+      <SubLabel accent={accent}>Geometry</SubLabel>
+      <HexSlider label="Hex radius" value={vals.radius} onChange={set('radius')} accent={accent} cyan={cyan} />
+      <HexSlider label="Icon size" value={vals.iconSize} onChange={set('iconSize')} accent={accent} cyan={cyan} />
+      <HexSlider label="Icon padding" value={vals.padding} onChange={set('padding')} accent={accent} cyan={cyan} />
+      <SubLabel accent={accent}>Detail</SubLabel>
+      <HexSlider label="Outline width" value={vals.outline} onChange={set('outline')} accent={accent} cyan={cyan} />
+      <HexSlider label="Corner radius" value={vals.corner} onChange={set('corner')} accent={accent} cyan={cyan} />
+      <OrientPicker value={orient} onChange={setOrient} accent={accent} />
+    </div>
+  );
+}
+
+// ── TAB CONTENT: STYLE ────────────────────────────────────────────
+function StyleTab({ accent }) {
+  const SWATCHES = ['#7c5cfc', '#ff6b6b', '#00c9a7', '#374151', 'none'];
+  const [hexFill, setHexFill] = useState('#7c5cfc');
+  const [outline, setOutline] = useState(true);
+  const [glow, setGlow] = useState(false);
+  const Toggle = ({ on, toggle }) => (
+    <div onClick={toggle} style={{
+      width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+      background: on ? accent : 'rgba(255,255,255,0.1)',
+      position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+    }}>
+      <div style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.35)' }} />
+    </div>
+  );
+  return (
+    <div>
+      <SubLabel accent={accent}>Hex fill color</SubLabel>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 28 }}>
+        {SWATCHES.map(c => (
+          <button key={c} onClick={() => setHexFill(c)} style={{
+            width: 46, height: 46, borderRadius: 13, cursor: 'pointer', flexShrink: 0,
+            background: c === 'none' ? 'rgba(255,255,255,0.04)' : c,
+            border: hexFill === c ? `2.5px solid ${accent}` : '2px solid rgba(255,255,255,0.1)',
+            color: '#606080', fontSize: 16
+          }}>{c === 'none' ? '∅' : ''}</button>
+        ))}
+      </div>
+      <SubLabel accent={accent}>Effects</SubLabel>
+      {[['Hex outline', outline, () => setOutline(v => !v)], ['Glow effect', glow, () => setGlow(v => !v)]].map(([lbl, val, tog]) => (
+        <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+          <span style={{ color: '#9898c0', fontSize: 13 }}>{lbl}</span>
+          <Toggle on={val} toggle={tog} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── TAB CONTENT: ORDER ────────────────────────────────────────────
+function OrderTab() {
+  return (
+    <div style={{ paddingTop: 36, textAlign: 'center', color: '#8080b0' }}>
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" style={{ margin: '0 auto 16px', display: 'block', opacity: 0.3 }}>
+        <path d="M8 14h28M8 22h28M8 30h28" stroke="#9090b8" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M33 9l5 5-5 5M11 30l-5 5 5 5" stroke="#9090b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div style={{ fontWeight: 700, color: '#dcdcf8', fontSize: 15, fontFamily: 'Space Grotesk,sans-serif', marginBottom: 10 }}>Drag to reorder</div>
+      <div style={{ fontSize: 13, lineHeight: 1.7, maxWidth: 220, margin: '0 auto', color: '#505070' }}>
+        Long-press any icon in the launcher to drag and rearrange its grid position
+      </div>
+    </div>
+  );
+}
+
+// ── TAB CONTENT: MORE ─────────────────────────────────────────────
+function MoreTab({ accent }) {
+  const [badges, setBadges] = useState(true);
+  const [labels, setLabels] = useState(true);
+  const [haptics, setHaptics] = useState(false);
+  const ToggleRow = ({ label, value, onChange }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+      <span style={{ color: '#9898c0', fontSize: 13 }}>{label}</span>
+      <div onClick={onChange} style={{
+        width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+        background: value ? accent : 'rgba(255,255,255,0.1)',
+        position: 'relative', cursor: 'pointer', transition: 'background 0.2s'
+      }}>
+        <div style={{ position: 'absolute', top: 3, left: value ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.35)' }} />
+      </div>
+    </div>
+  );
+  return (
+    <div>
+      <ToggleRow label="Notification badges" value={badges} onChange={() => setBadges(v => !v)} />
+      <ToggleRow label="App labels" value={labels} onChange={() => setLabels(v => !v)} />
+      <ToggleRow label="Haptic feedback" value={haptics} onChange={() => setHaptics(v => !v)} />
+    </div>
+  );
+}
+
+// ── EDIT MODE SCREEN ──────────────────────────────────────────────
+const EDIT_TABS = [
+  { id: 'shape', label: 'Shape', icon: <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><polygon points="9,1.5 16.5,5.5 16.5,12.5 9,16.5 1.5,12.5 1.5,5.5" stroke="currentColor" strokeWidth="1.6" fill="none" /></svg> },
+  { id: 'style', label: 'Style', icon: <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="5.5" cy="5.5" r="3" fill="currentColor" opacity=".85" /><circle cx="12.5" cy="5.5" r="3" fill="currentColor" opacity=".55" /><circle cx="9" cy="13" r="3" fill="currentColor" opacity=".7" /></svg> },
+  { id: 'order', label: 'Order', icon: <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg> },
+  { id: 'more', label: 'More', icon: <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="4" cy="9" r="1.7" fill="currentColor" /><circle cx="9" cy="9" r="1.7" fill="currentColor" /><circle cx="14" cy="9" r="1.7" fill="currentColor" /></svg> },
+];
+
+function EditModeScreen({ accent, cyan, sheetGlass }) {
+  const [tab, setTab] = useState('shape');
+  const SUB = { shape: '5 parameters', style: 'Colors & effects', order: 'Drag to reorder', more: 'Misc options' };
+
+  return (
+    <div style={{ width: 390, height: 844, background: '#040410', position: 'relative', overflow: 'hidden', fontFamily: 'DM Sans,sans-serif' }}>
+      {/* BG hex grid */}
+      <HexBackground />
+      {/* Vignette overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(4,4,16,0.3) 0%, rgba(4,4,16,0.6) 55%, rgba(4,4,16,0.0) 100%)' }} />
+      {/* Status bar */}
+      <div style={{ position: 'relative', zIndex: 10 }}><StatusBar /></div>
+
+      {/* Bottom sheet */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 578,
+        borderRadius: '28px 28px 0 0',
+        background: sheetGlass ? 'rgba(7,7,22,0.86)' : '#0b0b1e',
+        backdropFilter: sheetGlass ? 'blur(48px) saturate(1.5)' : undefined,
+        display: 'flex', flexDirection: 'column', overflow: 'hidden'
+      }}>
+        {/* Gradient accent top line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: 1.5,
+          background: `linear-gradient(to right, transparent 5%, ${accent} 30%, ${cyan} 70%, transparent 95%)`
+        }} />
+        {/* Grain */}
+        <GrainOverlay opacity={0.032} />
+
+        {/* Handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 14 }}>
+          <div style={{ width: 32, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.14)' }} />
+        </div>
+
+        {/* Header */}
+        <div style={{ padding: '12px 24px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif', color: '#f0f0ff', letterSpacing: -0.4 }}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </div>
+            <div style={{ fontSize: 12, color: '#40405e', marginTop: 3 }}>{SUB[tab]}</div>
+          </div>
+          <button style={{
+            width: 34, height: 34, borderRadius: '50%',
+            background: 'rgba(255,60,60,0.1)', border: '1px solid rgba(255,60,60,0.22)',
+            color: '#ff6868', fontSize: 15, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+          }}>✕</button>
+        </div>
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.055)', margin: '0 24px' }} />
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px 8px' }}>
+          {tab === 'shape' && <ShapeTab accent={accent} cyan={cyan} />}
+          {tab === 'style' && <StyleTab accent={accent} />}
+          {tab === 'order' && <OrderTab />}
+          {tab === 'more' && <MoreTab accent={accent} />}
+        </div>
+
+        {/* Tab bar */}
+        <div style={{ padding: '8px 14px 24px', position: 'relative', zIndex: 5 }}>
+          <div style={{ display: 'flex', gap: 2, background: 'rgba(255,255,255,0.035)', borderRadius: 20, padding: '3px' }}>
+            {EDIT_TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                flex: 1, padding: '10px 0', borderRadius: 16,
+                background: tab === t.id ? `${accent}22` : 'transparent',
+                border: tab === t.id ? `1px solid ${accent}38` : '1px solid transparent',
+                color: tab === t.id ? '#e8e8ff' : '#3a3a58',
+                fontSize: 10, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'DM Sans,sans-serif', letterSpacing: 0.4,
+                textTransform: 'uppercase', transition: 'all 0.2s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                boxShadow: tab === t.id ? `0 0 16px ${accent}20` : 'none'
+              }}>
+                {t.icon}
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SETTINGS SCREEN ───────────────────────────────────────────────
+const S_ICONS = {
+  widgets: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><rect x="2" y="2" width="7.5" height="7.5" rx="1.8" fill="currentColor" /><rect x="11.5" y="2" width="7.5" height="7.5" rx="1.8" fill="currentColor" opacity=".85" /><rect x="2" y="11.5" width="7.5" height="7.5" rx="1.8" fill="currentColor" opacity=".85" /><rect x="11.5" y="11.5" width="7.5" height="7.5" rx="1.8" fill="currentColor" opacity=".5" /></svg>,
+  eye: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><path d="M1 10.5s4-6.5 9.5-6.5 9.5 6.5 9.5 6.5-4 6.5-9.5 6.5S1 10.5 1 10.5z" stroke="currentColor" strokeWidth="1.8" fill="none" /><circle cx="10.5" cy="10.5" r="2.8" fill="currentColor" /></svg>,
+  shield: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><path d="M10.5 2L2.5 5.5v5.5c0 4.2 3.3 7.7 8 8.5 4.7-.8 8-4.3 8-8.5V5.5L10.5 2z" stroke="currentColor" strokeWidth="1.7" fill="none" /><path d="M7.5 10.5l2.2 2.5 3.8-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+  home: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><path d="M1.5 9.5L10.5 2l9 7.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /><path d="M3.5 8v10a.8.8 0 00.8.8H8v-5h5v5h3.7a.8.8 0 00.8-.8V8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>,
+  upload: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><path d="M10.5 3v11.5M6.5 7l4-4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M2.5 16.5v2a.8.8 0 00.8.8h14.4a.8.8 0 00.8-.8v-2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>,
+  download: <svg width="21" height="21" viewBox="0 0 21 21" fill="none"><path d="M10.5 3v11.5M6.5 11l4 4 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /><path d="M2.5 16.5v2a.8.8 0 00.8.8h14.4a.8.8 0 00.8-.8v-2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>,
+};
+
+// Mini colored hex preview for Customize card
+function HexColorPreview() {
+  const SZ = 28, W = SZ * Math.sqrt(3), H = SZ * 2;
+  const items = [
+    { r: 0, c: 0, color: '#b71c1c' }, { r: 0, c: 1, color: '#4c1d95' }, { r: 0, c: 2, color: '#064e3b' },
+    { r: 1, c: 0, color: '#0c1a2e' }, { r: 1, c: 1, color: '#7c3aed' }, { r: 1, c: 2, color: '#1d4ed8' },
+  ];
+  return (
+    <svg width="170" height="120" viewBox="0 0 170 120"
+      style={{ position: 'absolute', right: -16, top: -8, opacity: 0.55, pointerEvents: 'none' }}>
+      {items.map(({ r, c, color }) => {
+        const x = W * c + (r % 2 === 1 ? W / 2 : 0) + SZ * 0.7;
+        const y = H * 0.75 * r + SZ * 0.7;
+        return (
+          <g key={`${r},${c}`}>
+            <polygon points={hexPts(x, y, SZ - 2)} fill={color} />
+            <polygon points={hexPts(x, y, SZ - 2)} fill="none"
+              stroke="rgba(255,255,255,0.18)" strokeWidth="1" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// Section label with accent pip
+function SecLabel({ children, accent }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 24px', marginBottom: 12 }}>
+      <div style={{ width: 4, height: 4, borderRadius: '50%', background: accent, opacity: 0.65, flexShrink: 0 }} />
+      <span style={{ fontSize: 11, letterSpacing: 1.8, color: '#36366a', fontWeight: 700, textTransform: 'uppercase' }}>
+        {children}
+      </span>
+    </div>
+  );
+}
+
+// Setting card with gradient border
+function SettingCard({ icon, label, desc, gradient, accent }) {
+  return (
+    <div style={{ padding: '1px', borderRadius: 20, background: `linear-gradient(140deg, ${accent}30 0%, rgba(255,255,255,0.07) 60%, transparent 100%)` }}>
+      <div style={{ borderRadius: 19, padding: '18px 16px', background: '#0d0d1e' }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 14, marginBottom: 12,
+          background: gradient, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', color: '#fff', boxShadow: '0 6px 20px rgba(0,0,0,0.3)'
+        }}>{icon}</div>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: '#d8d8f0', letterSpacing: 0.8, textTransform: 'uppercase', fontFamily: 'Space Grotesk,sans-serif' }}>
+          {label}
+        </div>
+        {desc && <div style={{ fontSize: 11, color: '#3a3a5a', marginTop: 4, fontWeight: 400 }}>{desc}</div>}
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ accent, cyan }) {
+  const SECTIONS = [
+    {
+      title: 'Tools', cards: [
+        { icon: S_ICONS.widgets, label: 'Widgets', desc: 'Place on launcher', g: 'linear-gradient(135deg,#f59e0b,#ef4444)' },
+        { icon: S_ICONS.eye, label: 'App Visibility', desc: 'Show or hide apps', g: 'linear-gradient(135deg,#ec4899,#8b5cf6)' },
+      ]
+    },
+    {
+      title: 'System', cards: [
+        { icon: S_ICONS.shield, label: 'Permissions', desc: 'Manage access', g: 'linear-gradient(135deg,#ef4444,#f97316)' },
+        { icon: S_ICONS.home, label: 'Default Home', desc: 'Set as default', g: 'linear-gradient(135deg,#10b981,#06b6d4)' },
+      ]
+    },
+    {
+      title: 'Backup', cards: [
+        { icon: S_ICONS.upload, label: 'Backup', desc: 'Save layout', g: 'linear-gradient(135deg,#6366f1,#8b5cf6)' },
+        { icon: S_ICONS.download, label: 'Restore', desc: 'Load layout', g: 'linear-gradient(135deg,#06b6d4,#3b82f6)' },
+      ]
+    },
+  ];
+
+  return (
+    <div style={{ width: 390, height: 844, background: '#040410', fontFamily: 'DM Sans,sans-serif', overflow: 'hidden', position: 'relative' }}>
+      {/* Atmospheric bg glow */}
+      <div style={{ position: 'absolute', top: -60, left: -60, width: 260, height: 260, borderRadius: '50%', background: `${accent}16`, filter: 'blur(60px)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 100, right: -80, width: 220, height: 220, borderRadius: '50%', background: `${cyan}0c`, filter: 'blur(60px)', pointerEvents: 'none' }} />
+
+      <div style={{ height: '100%', overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+        <StatusBar time="16:18" />
+
+        {/* Header */}
+        <div style={{ padding: '18px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 38, fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif', color: '#f0f0ff', letterSpacing: -1.5, lineHeight: 1 }}>
+              Settings
+            </div>
+            <div style={{ fontSize: 13.5, color: '#383862', marginTop: 8 }}>Tune your launcher</div>
+          </div>
+          {/* Mini app icon in header */}
+          <div style={{ width: 42, height: 42, borderRadius: 13, background: `linear-gradient(135deg, ${accent}60, ${cyan}40)`, border: `1px solid ${accent}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 4, flexShrink: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 22 22">
+              <polygon points={hexPts(11, 11, 9)} fill={accent} opacity=".9" />
+              <polygon points={hexPts(11, 11, 5.5)} fill="#040410" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Customize hero */}
+        <div style={{
+          margin: '20px 18px 24px', position: 'relative', overflow: 'hidden', borderRadius: 22,
+          background: `linear-gradient(140deg, ${accent}2a 0%, ${accent}10 50%, ${cyan}0e 100%)`,
+          border: `1px solid ${accent}38`, padding: '22px 22px 20px'
+        }}>
+          <HexColorPreview />
+          {/* Subtle inner grain */}
+          <GrainOverlay opacity={0.025} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2.5, color: `${accent}cc`, fontWeight: 700, textTransform: 'uppercase', marginBottom: 10 }}>
+              Customize
+            </div>
+            <div style={{
+              fontSize: 30, fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif', letterSpacing: -0.8,
+              background: `linear-gradient(120deg, #ffffff 0%, ${cyan} 100%)`,
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+            }}>Make it yours</div>
+            <div style={{ fontSize: 13, color: 'rgba(160,150,220,0.65)', marginTop: 6 }}>Shape · Style · Order</div>
+            {/* Arrow CTA */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: `${accent}cc` }}>Open Edit Mode</div>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke={accent} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity=".8" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Sections */}
+        {SECTIONS.map(sec => (
+          <div key={sec.title} style={{ marginBottom: 24 }}>
+            <SecLabel accent={accent}>{sec.title}</SecLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 18px' }}>
+              {sec.cards.map(c => <SettingCard key={c.label} icon={c.icon} label={c.label} desc={c.desc} gradient={c.g} accent={accent} />)}
+            </div>
+          </div>
+        ))}
+
+        {/* Home indicator */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0 20px' }}>
+          <div style={{ width: 120, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)' }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── APP ICONS (same 3, same quality) ──────────────────────────────
+function AppIconA({ size, accent, cyan }) {
+  const S = size, r = S * 0.138, W2 = r * Math.sqrt(3);
+  const pos = [[0,0],[W2,0],[W2/2,r*1.5],[-W2/2,r*1.5],[-W2,0],[-W2/2,-r*1.5],[W2/2,-r*1.5]];
+  const cols = [accent, cyan, '#f059da', `${accent}a8`, `${cyan}80`, '#6060ff', `${accent}60`];
+  return (
+    <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+      <defs>
+        <radialGradient id="ia2-bg"><stop offset="0%" stopColor="#1c1040" /><stop offset="100%" stopColor="#06060f" /></radialGradient>
+        <filter id="ia2-gl"><feGaussianBlur stdDeviation="5" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" /></filter>
+      </defs>
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="url(#ia2-bg)" />
+      <g filter="url(#ia2-gl)">
+        {pos.map(([dx, dy], i) => (
+          <polygon key={i} points={hexPts(S / 2 + dx, S / 2 + dy, r - 1.5)} fill={cols[i]} opacity={i === 0 ? 1 : 0.74} />
+        ))}
+      </g>
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function AppIconB({ size, accent, cyan }) {
+  const S = size, r = S * 0.153, W2 = r * Math.sqrt(3), H2 = r * 2;
+  const hexes = [];
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
+    const x = W2 * col + (row % 2 === 1 ? W2 / 2 : 0) + S / 2 - W2 * 1.08;
+    const y = H2 * 0.75 * row + S / 2 - H2 * 0.88;
+    hexes.push({ x, y, center: row === 1 && col === 1 });
+  }
+  return (
+    <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+      <defs>
+        <linearGradient id="ib2-bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#0e0e24" /><stop offset="100%" stopColor="#060612" /></linearGradient>
+        <linearGradient id="ib2-ac" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor={accent} /><stop offset="100%" stopColor={cyan} /></linearGradient>
+      </defs>
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="url(#ib2-bg)" />
+      {hexes.map((h, i) => (
+        <polygon key={i} points={hexPts(h.x, h.y, r - 2)}
+          fill={h.center ? 'url(#ib2-ac)' : 'rgba(255,255,255,0.04)'}
+          stroke={h.center ? 'none' : 'rgba(255,255,255,0.13)'} strokeWidth="1" />
+      ))}
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function AppIconC({ size, accent, cyan }) {
+  const S = size, cx = S / 2, cy = S / 2, OR = S * 0.42, IR = S * 0.26;
+  return (
+    <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`}>
+      <defs>
+        <linearGradient id="ic2-bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#090914" /><stop offset="100%" stopColor="#030308" /></linearGradient>
+        <linearGradient id="ic2-hx" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor={accent} /><stop offset="55%" stopColor="#4a3aff" /><stop offset="100%" stopColor={cyan} /></linearGradient>
+        <filter id="ic2-gw"><feGaussianBlur stdDeviation="7" result="b" /><feComposite in="SourceGraphic" in2="b" operator="over" /></filter>
+      </defs>
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="url(#ic2-bg)" />
+      <polygon points={hexPts(cx, cy, OR)} fill="url(#ic2-hx)" filter="url(#ic2-gw)" opacity=".88" />
+      <polygon points={hexPts(cx, cy, IR)} fill="#050510" />
+      {[0.84, 0.62, 0.4].map((sc, i) => (
+        <polygon key={i} points={hexPts(cx, cy, IR * sc)} fill="none"
+          stroke={`${accent}${i === 0 ? '3a' : i === 1 ? '22' : '14'}`} strokeWidth="1" />
+      ))}
+      <polygon points={hexPts(cx, cy, OR)} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1.5" />
+      <rect x={0} y={0} width={S} height={S} rx={S * 0.22} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "violet",
+  "sheetStyle": "glass"
+}/*EDITMODE-END*/;
+
+const ACCENTS = {
+  violet: { a: '#7c5cfc', b: '#00d4ff' },
+  coral:  { a: '#ff5555', b: '#ffcc33' },
+  mint:   { a: '#00c9a7', b: '#64dfdf' },
+};
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const { a: accent, b: cyan } = ACCENTS[t.accent] || ACCENTS.violet;
+
+  return (
+    <>
+      <DesignCanvas>
+        <DCSection id="icons" title="App Icon — 3 Concepts">
+          <DCArtboard id="icon-a" label="Void Cluster" width={160} height={160}>
+            <AppIconA size={160} accent={accent} cyan={cyan} />
+          </DCArtboard>
+          <DCArtboard id="icon-b" label="Wireframe Grid" width={160} height={160}>
+            <AppIconB size={160} accent={accent} cyan={cyan} />
+          </DCArtboard>
+          <DCArtboard id="icon-c" label="Mono Hex" width={160} height={160}>
+            <AppIconC size={160} accent={accent} cyan={cyan} />
+          </DCArtboard>
+        </DCSection>
+        <DCSection id="screens" title="UI Screens">
+          <DCArtboard id="edit" label="Edit Mode" width={390} height={844}>
+            <EditModeScreen accent={accent} cyan={cyan} sheetGlass={t.sheetStyle === 'glass'} />
+          </DCArtboard>
+          <DCArtboard id="settings" label="Settings" width={390} height={844}>
+            <SettingsScreen accent={accent} cyan={cyan} />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection label="Accent" />
+        <TweakRadio label="Color theme" value={t.accent}
+          options={['violet', 'coral', 'mint']}
+          onChange={v => setTweak('accent', v)} />
+        <TweakSection label="Edit Mode" />
+        <TweakRadio label="Sheet style" value={t.sheetStyle}
+          options={['glass', 'solid']}
+          onChange={v => setTweak('sheetStyle', v)} />
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

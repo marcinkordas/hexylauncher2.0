@@ -9,7 +9,73 @@
         android:id="@+id/hexGrid"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-        
+
+    <!-- Search scrim: dims the grid while search is active (Gmail / One UI) -->
+    <View
+        android:id="@+id/searchScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:alpha="0"
+        android:visibility="gone" />
+
+    <!-- Settings: standalone corner button, opposite the search bar -->
+    <ImageView
+        android:id="@+id/settingsCorner"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="44dp"
+        android:padding="9dp"
+        android:background="@drawable/bg_corner_circle"
+        android:src="@drawable/ic_settings_24"
+        android:tint="@android:color/white"
+        android:contentDescription="Settings"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- Google fallback chip: rises above the dock while a query is present -->
+    <LinearLayout
+        android:id="@+id/googleChip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="96dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_google_chip"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:elevation="6dp"
+        android:alpha="0"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="11dp"
+            android:src="@drawable/ic_search_24"
+            android:contentDescription="Search Google" />
+
+        <TextView
+            android:id="@+id/googleChipText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="Search Google" />
+    </LinearLayout>
+
     <!-- Dock Bar (Top) - One UI 8 Style -->
     <com.hexgrid.launcher.ui.DockView
         android:id="@+id/dockTop"
@@ -20,7 +86,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="48dp"
         android:visibility="gone" />
-        
+
     <!-- Dock Bar (Bottom) - One UI 8 Style -->
     <com.hexgrid.launcher.ui.DockView
         android:id="@+id/dockBottom"

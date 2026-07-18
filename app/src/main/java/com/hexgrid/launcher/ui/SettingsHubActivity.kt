@@ -52,6 +52,17 @@ class SettingsHubActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateBadges()
+        applyWallpaperAccent()
+    }
+
+    /**
+     * If the user enabled "Match accent to wallpaper", overlay the wallpaper-derived hue on
+     * the hero card so the chrome reads as part of the user's wallpaper choice. The static
+     * card bg drawable still provides the rounded-rect mask + border; we only re-tint.
+     */
+    private fun applyWallpaperAccent() {
+        val accent = com.hexgrid.launcher.util.WallpaperAccent.resolve(this)
+        binding.tileHero.backgroundTintList = android.content.res.ColorStateList.valueOf(accent)
     }
 
     override fun onSupportNavigateUp(): Boolean {

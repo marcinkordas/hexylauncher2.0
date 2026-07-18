@@ -2,6 +2,7 @@ package com.hexgrid.launcher
 
 import android.animation.ValueAnimator
 import android.app.AlertDialog
+import android.app.SearchManager
 import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,11 +13,17 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Build
 import android.os.UserHandle
+import android.speech.RecognizerIntent
+import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.Toast
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.hexgrid.launcher.databinding.ActivityMainBinding
@@ -48,6 +55,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var widgetManager: WidgetManager
 
     private var widgetFadeAnimator: ValueAnimator? = null
+
+    // Voice search: RecognizerIntent result → fills the dock search field.
+    private val voiceSearchLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val spoken = result.data
+                    ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    ?.firstOrNull()
+                if (!spoken.isNullOrBlank()) {
+                    val dock = getCurrentDock()
+                    if (!dock.isInSearchMode()) dock.enterSearchMode()
+                    dock.setSearchText(spoken)
+                }
+            }
+        }
 
     // Edit Mode state — null when overlay is not attached.
     private var editModeOverlay: com.hexgrid.launcher.ui.EditModeOverlay? = null
@@ -325,8 +347,14 @@ class MainActivity : AppCompatActivity() {
         dock.onSearchTextChanged = { query ->
             viewModel.filterApps(query)
             animateWidgetVisibility(query.isBlank())
+            updateGoogleChip(query)
         }
-        dock.onSettingsClick = { startActivity(Intent(this, SettingsHubActivity::class.java)) }
+        dock.onAssistantSwipe = { launchAssistant() }
+        dock.onMicClick = { launchVoiceSearch() }
+        dock.onSearchModeChanged = { active ->
+            setSearchScrim(active)
+            if (!active) updateGoogleChip("")
+        }
         dock.onAppClick = { app ->
             if (app.packageName == packageName) {
                 startActivity(Intent(this, SettingsHubActivity::class.java))
@@ -341,6 +369,108 @@ class MainActivity : AppCompatActivity() {
                 .show()
         }
         dock.refreshSettings()
+        positionChrome(position)
+    }
+
+    /**
+     * Places the corner Settings button opposite the search bar (top-left when
+     * the bar is at the bottom, bottom-left when it's at the top) and anchors
+     * the Google chip just above the active bar.
+     */
+    private fun positionChrome(position: SettingsManager.SearchPosition) {
+        val d = resources.displayMetrics.density
+        val corner = binding.settingsCorner
+        val cornerLp = corner.layoutParams as FrameLayout.LayoutParams
+        val chip = binding.googleChip
+        val chipLp = chip.layoutParams as FrameLayout.LayoutParams
+
+        if (position == SettingsManager.SearchPosition.TOP) {
+            cornerLp.gravity = Gravity.BOTTOM or Gravity.START
+            cornerLp.topMargin = 0; cornerLp.bottomMargin = (44 * d).toInt()
+            chipLp.gravity = Gravity.TOP; chipLp.topMargin = (116 * d).toInt(); chipLp.bottomMargin = 0
+        } else { // BOTTOM or NONE
+            cornerLp.gravity = Gravity.TOP or Gravity.START
+            cornerLp.topMargin = (44 * d).toInt(); cornerLp.bottomMargin = 0
+            chipLp.gravity = Gravity.BOTTOM; chipLp.bottomMargin = (96 * d).toInt(); chipLp.topMargin = 0
+        }
+        corner.layoutParams = cornerLp
+        chip.layoutParams = chipLp
+
+        corner.setOnClickListener { startActivity(Intent(this, SettingsHubActivity::class.java)) }
+        chip.setOnClickListener { searchGoogle(getCurrentDock().getSearchText()) }
+    }
+
+    /** Fades the search scrim over the grid in/out (Gmail / One UI focus). */
+    private fun setSearchScrim(visible: Boolean) {
+        val scrim = binding.searchScrim
+        scrim.animate().cancel()
+        if (visible) {
+            scrim.visibility = View.VISIBLE
+            scrim.animate().alpha(1f).setDuration(200).start()
+        } else {
+            scrim.animate().alpha(0f).setDuration(200)
+                .withEndAction { scrim.visibility = View.GONE }.start()
+        }
+    }
+
+    /** Shows/updates the "Search Google for …" chip for the current query. */
+    private fun updateGoogleChip(query: String) {
+        val chip = binding.googleChip
+        val show = query.isNotBlank() && SettingsManager.getSearchGoogleFallback(this)
+        if (show) {
+            binding.googleChipText.text = "Search Google for \"$query\""
+            if (chip.visibility != View.VISIBLE) {
+                chip.visibility = View.VISIBLE
+                chip.alpha = 0f
+                chip.animate().alpha(1f).setDuration(200).start()
+            }
+        } else if (chip.visibility == View.VISIBLE) {
+            chip.animate().cancel()
+            chip.animate().alpha(0f).setDuration(150)
+                .withEndAction { chip.visibility = View.GONE }.start()
+        }
+    }
+
+    /** Launches Google Assistant, falling back through voice-command → assist. */
+    private fun launchAssistant() {
+        val candidates = listOf(
+            Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            Intent(Intent.ACTION_ASSIST).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        for (intent in candidates) {
+            try { startActivity(intent); return } catch (_: Exception) { }
+        }
+        Toast.makeText(this, "No assistant app available", Toast.LENGTH_SHORT).show()
+    }
+
+    /** Launches the system speech recognizer; the result fills the search field. */
+    private fun launchVoiceSearch() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Search")
+        }
+        try {
+            voiceSearchLauncher.launch(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Voice input unavailable", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Opens a Google web search for [query] (web-search intent → browser fallback). */
+    private fun searchGoogle(query: String) {
+        if (query.isBlank()) return
+        val webSearch = Intent(Intent.ACTION_WEB_SEARCH)
+            .putExtra(SearchManager.QUERY, query)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try { startActivity(webSearch); return } catch (_: Exception) { }
+        try {
+            startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + Uri.encode(query)))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: Exception) {
+            Toast.makeText(this, "No browser available", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun animateWidgetVisibility(visible: Boolean) {

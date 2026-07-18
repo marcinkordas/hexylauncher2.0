@@ -17,6 +17,8 @@ object SettingsManager {
     private const val KEY_OUTLINE_WIDTH = "outline_width"
     private const val KEY_SEARCH_POSITION = "search_position"
     private const val KEY_SEARCH_WITH_MIC = "search_with_mic"
+    private const val KEY_SEARCH_GOOGLE_FALLBACK = "search_google_fallback"
+    private const val KEY_USE_WALLPAPER_ACCENT = "use_wallpaper_accent"
     private const val KEY_CORNER_RADIUS = "corner_radius"
     private const val KEY_DIM_STATUS_BAR = "dim_status_bar"
     private const val KEY_DARK_THEME = "dark_theme"
@@ -37,6 +39,9 @@ object SettingsManager {
     const val DEFAULT_SHOW_NOTIFICATION_GLOW = true
     const val DEFAULT_OUTLINE_WIDTH = 1.5f
     const val DEFAULT_SEARCH_WITH_MIC = true
+    const val DEFAULT_SEARCH_GOOGLE_FALLBACK = true
+    // Off by default → deterministic brand accent (#7C5CFC) matching the hg palette.
+    const val DEFAULT_USE_WALLPAPER_ACCENT = false
     const val DEFAULT_CORNER_RADIUS = 0f
     const val DEFAULT_DIM_STATUS_BAR = true
     const val DEFAULT_DARK_THEME = true
@@ -158,7 +163,21 @@ object SettingsManager {
     fun setSearchWithMic(context: Context, value: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_SEARCH_WITH_MIC, value).apply()
     }
-    
+
+    // Search: "Search Google for …" fallback chip
+    fun getSearchGoogleFallback(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_SEARCH_GOOGLE_FALLBACK, DEFAULT_SEARCH_GOOGLE_FALLBACK)
+    fun setSearchGoogleFallback(context: Context, value: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_SEARCH_GOOGLE_FALLBACK, value).apply()
+    }
+
+    // Wallpaper-derived accent (used by WallpaperAccent). Off → static brand accent.
+    fun getUseWallpaperAccent(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_USE_WALLPAPER_ACCENT, DEFAULT_USE_WALLPAPER_ACCENT)
+    fun setUseWallpaperAccent(context: Context, value: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_USE_WALLPAPER_ACCENT, value).apply()
+    }
+
     // Corner Radius (tile faceting)
     fun getCornerRadius(context: Context): Float = getPrefs(context).getFloat(KEY_CORNER_RADIUS, DEFAULT_CORNER_RADIUS)
     fun setCornerRadius(context: Context, value: Float) {

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hex inside the app badge: outer accent-tinted polygon + inner cut for "wireframe" feel. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@color/hg_text_1"
+        android:pathData="M12,2 L20.66,7 L20.66,17 L12,22 L3.34,17 L3.34,7 Z
+                          M12,5.46 L6.34,8.73 L6.34,15.27 L12,18.54 L17.66,15.27 L17.66,8.73 Z" />
+</vector>

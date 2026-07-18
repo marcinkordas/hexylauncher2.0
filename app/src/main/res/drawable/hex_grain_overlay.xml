@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Faint constellation of hexagons — atmospheric grain that ties chrome to the
+     launcher's geometric identity. Stays under 0.06 alpha so it never competes with
+     foreground content but reads as "intentionally textured" rather than flat. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp" android:height="320dp"
+    android:viewportWidth="240" android:viewportHeight="320">
+    <group android:scaleX="1" android:scaleY="1">
+        <path android:fillColor="#0AFFFFFF"
+            android:pathData="M30,40 L42,47 L42,61 L30,68 L18,61 L18,47 Z"/>
+        <path android:fillColor="#08FFFFFF"
+            android:pathData="M120,80 L132,87 L132,101 L120,108 L108,101 L108,87 Z"/>
+        <path android:fillColor="#0AFFFFFF"
+            android:pathData="M200,140 L212,147 L212,161 L200,168 L188,161 L188,147 Z"/>
+        <path android:fillColor="#06FFFFFF"
+            android:pathData="M70,200 L82,207 L82,221 L70,228 L58,221 L58,207 Z"/>
+        <path android:fillColor="#08FFFFFF"
+            android:pathData="M170,260 L182,267 L182,281 L170,288 L158,281 L158,267 Z"/>
+        <path android:fillColor="#0AFFFFFF"
+            android:pathData="M40,290 L52,297 L52,311 L40,318 L28,311 L28,297 Z"/>
+    </group>
+</vector>
