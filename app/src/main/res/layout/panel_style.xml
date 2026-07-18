@@ -4,10 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/tile_squircle_secondary"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:elevation="4dp">
+    android:orientation="vertical">
 
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/switchShowOutline"
@@ -47,6 +44,16 @@
         android:valueFrom="0"
         android:valueTo="100"
         android:stepSize="1"
+        app:thumbColor="#FFFFFFFF"
+        app:thumbRadius="11dp"
+        app:trackHeight="6dp"
+        app:trackColorActive="@color/hg_accent"
+        app:trackColorInactive="@color/hg_track_unfilled"
+        app:haloRadius="20dp"
+        app:haloColor="#337C5CFC"
+        app:tickVisible="true"
+        app:tickColorActive="#887C5CFC"
+        app:tickColorInactive="#22FFFFFF"
         android:contentDescription="Tile transparency" />
 
     <!-- Dock transparency: 0–100 -->
@@ -62,7 +69,51 @@
         android:valueFrom="0"
         android:valueTo="100"
         android:stepSize="1"
+        app:thumbColor="#FFFFFFFF"
+        app:thumbRadius="11dp"
+        app:trackHeight="6dp"
+        app:trackColorActive="@color/hg_accent"
+        app:trackColorInactive="@color/hg_track_unfilled"
+        app:haloRadius="20dp"
+        app:haloColor="#337C5CFC"
+        app:tickVisible="true"
+        app:tickColorActive="#887C5CFC"
+        app:tickColorInactive="#22FFFFFF"
         android:contentDescription="Dock transparency" />
+
+    <!-- Wallpaper opacity: 100 = full wallpaper, 0 = full black scrim. Lets users dim a busy
+         wallpaper to make icons stand out without changing the wallpaper itself. -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Wallpaper opacity"
+        android:textAppearance="?attr/textAppearanceLabelMedium" />
+    <com.google.android.material.slider.Slider
+        android:id="@+id/sliderWallpaperOpacity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="0"
+        android:valueTo="100"
+        android:stepSize="1"
+        app:thumbColor="#FFFFFFFF"
+        app:thumbRadius="11dp"
+        app:trackHeight="6dp"
+        app:trackColorActive="@color/hg_accent"
+        app:trackColorInactive="@color/hg_track_unfilled"
+        app:haloRadius="20dp"
+        app:haloColor="#337C5CFC"
+        app:tickVisible="true"
+        app:tickColorActive="#887C5CFC"
+        app:tickColorInactive="#22FFFFFF"
+        android:contentDescription="Wallpaper opacity" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchUseWallpaperAccent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="Match accent to wallpaper" />
 
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/switchUnifiedBucketColors"

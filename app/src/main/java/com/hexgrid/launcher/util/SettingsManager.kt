@@ -19,6 +19,7 @@ object SettingsManager {
     private const val KEY_SEARCH_WITH_MIC = "search_with_mic"
     private const val KEY_SEARCH_GOOGLE_FALLBACK = "search_google_fallback"
     private const val KEY_USE_WALLPAPER_ACCENT = "use_wallpaper_accent"
+    private const val KEY_WALLPAPER_OPACITY = "wallpaper_opacity"
     private const val KEY_CORNER_RADIUS = "corner_radius"
     private const val KEY_DIM_STATUS_BAR = "dim_status_bar"
     private const val KEY_DARK_THEME = "dark_theme"
@@ -42,6 +43,7 @@ object SettingsManager {
     const val DEFAULT_SEARCH_GOOGLE_FALLBACK = true
     // Off by default → deterministic brand accent (#7C5CFC) matching the hg palette.
     const val DEFAULT_USE_WALLPAPER_ACCENT = false
+    const val DEFAULT_WALLPAPER_OPACITY = 100 // 0-100 (100 = full wallpaper, 0 = full black scrim)
     const val DEFAULT_CORNER_RADIUS = 0f
     const val DEFAULT_DIM_STATUS_BAR = true
     const val DEFAULT_DARK_THEME = true
@@ -176,6 +178,13 @@ object SettingsManager {
         getPrefs(context).getBoolean(KEY_USE_WALLPAPER_ACCENT, DEFAULT_USE_WALLPAPER_ACCENT)
     fun setUseWallpaperAccent(context: Context, value: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_USE_WALLPAPER_ACCENT, value).apply()
+    }
+
+    // Wallpaper opacity (0-100): dims the wallpaper behind the grid.
+    fun getWallpaperOpacity(context: Context): Int =
+        getPrefs(context).getInt(KEY_WALLPAPER_OPACITY, DEFAULT_WALLPAPER_OPACITY)
+    fun setWallpaperOpacity(context: Context, value: Int) {
+        getPrefs(context).edit().putInt(KEY_WALLPAPER_OPACITY, value.coerceIn(0, 100)).apply()
     }
 
     // Corner Radius (tile faceting)

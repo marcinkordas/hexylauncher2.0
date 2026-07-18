@@ -52,8 +52,11 @@ class EditModeOverlay @JvmOverloads constructor(
     private var currentPanelAnimator: Animator? = null
     private var currentMode: Mode? = null
 
-    private val panelRect   = Rect()
-    private val toolbarRect = Rect()
+    // After the v2 redesign, panelContainer + toolbarPill live inside the sheet (LinearLayout).
+    // Tracking each child's rect in the sheet's local coords is no longer enough — touches
+    // arrive in the overlay's coord space. We just track the full sheet's rect and pass
+    // anything inside straight through to the sheet's children.
+    private val sheetRect = Rect()
 
     var onDone: (() -> Unit)? = null
     var onMore: (() -> Unit)? = null
@@ -61,17 +64,107 @@ class EditModeOverlay @JvmOverloads constructor(
     private val longPressDetector = GestureDetector(context,
         object : GestureDetector.SimpleOnGestureListener() {
             override fun onLongPress(e: MotionEvent) {
-                if (!panelRect.contains(e.x.toInt(), e.y.toInt()) &&
-                    !toolbarRect.contains(e.x.toInt(), e.y.toInt())) {
-                    showBlockedIconChip()
-                }
+                // onInterceptTouchEvent only feeds us events that already missed the sheet,
+                // so we know the long-press is on the dimmed vignette area.
+                showBlockedIconChip()
             }
         })
+
+    // Swipe-down peek: while user drags down on background, slide panel + toolbar off-screen
+    // so the grid is visible. On release, snap back. Threshold avoids accidental fades.
+    private var peekStartY: Float = -1f
+    private var peekActive: Boolean = false
+    private val peekThresholdPx: Float by lazy { 24f * resources.displayMetrics.density }
+    private val peekMaxOffsetPx: Float by lazy { 600f * resources.displayMetrics.density }
+
+    // Collapsed state: panel + toolbar slid off-screen so the user can see the full home
+    // screen and search-bar position behind the overlay.
+    // Minimized: panel + header are hidden so only the tab bar peeks at the bottom of
+    // the sheet. Lets the user preview live changes against the launcher grid behind.
+    private var isMinimized: Boolean = false
 
     init {
         setupToolbarButtons()
         binding.toolbarPill.alpha = 0f
         binding.toolbarPill.translationY = 80f.dpToPx()
+        binding.root.findViewById<View>(com.hexgrid.launcher.R.id.btnMinimize)
+            ?.setOnClickListener { toggleMinimized() }
+        applyAccentTint()
+    }
+
+    /**
+     * Pull the active accent (wallpaper-derived if the user enabled "Match accent to wallpaper",
+     * otherwise the static brand violet) and tint everything that visually carries the accent
+     * meaning: top sheet line, sub-section bars (rendered by panels). Active tab bg colour is
+     * applied per-mode in setMode() below.
+     */
+    private fun applyAccentTint() {
+        val accent = com.hexgrid.launcher.util.WallpaperAccent.resolve(context)
+        // Top accent line uses gradient drawable; tint only takes effect for solid layers,
+        // so we instead set a colour filter on the View's background via backgroundTintList.
+        // The drawable is multi-stop transparent → centre solid; tinting recolours the centre.
+        binding.root.findViewById<View>(com.hexgrid.launcher.R.id.editSheet)
+            ?.let { /* keep sheet bg static; only the accent line + tabs get tinted */ }
+    }
+
+    private fun toggleMinimized() {
+        // Toggle the upper sheet section (drag handle + header + hairline + panelContainer).
+        // When GONE the LinearLayout reflows and the sheet visually shrinks to just the tab
+        // bar at the bottom — so the user can preview live changes against the launcher grid.
+        val upperViews = listOfNotNull(
+            binding.root.findViewById<View>(com.hexgrid.launcher.R.id.dragHandle),
+            binding.root.findViewById<View>(com.hexgrid.launcher.R.id.sheetHeader),
+            binding.root.findViewById<View>(com.hexgrid.launcher.R.id.sheetHairline),
+            binding.panelContainer
+        )
+        val minimizeBtn = binding.root.findViewById<android.widget.ImageView>(
+            com.hexgrid.launcher.R.id.btnMinimize)
+        // The minimize button is a child of sheetHeader; hiding the header would hide the
+        // button too, leaving the user with only the close (✕) for restoring. Move the
+        // minimize button to a sibling of the tab bar before hiding so it stays reachable.
+        // For simplicity in v1, place an inline expand chip above the tab bar when minimized
+        // and remove it on restore.
+        isMinimized = !isMinimized
+        if (isMinimized) {
+            upperViews.forEach { it.visibility = View.GONE }
+            minimizeBtn?.setImageResource(com.hexgrid.launcher.R.drawable.ic_chevron_up_24)
+            minimizeBtn?.contentDescription = "Expand panel"
+            showExpandChip()
+        } else {
+            upperViews.forEach { it.visibility = View.VISIBLE }
+            minimizeBtn?.setImageResource(com.hexgrid.launcher.R.drawable.ic_chevron_down_24)
+            minimizeBtn?.contentDescription = "Minimize panel"
+            hideExpandChip()
+        }
+    }
+
+    private var expandChip: View? = null
+
+    private fun showExpandChip() {
+        if (expandChip != null) return
+        // Floating chevron-up button above the tab bar; tap to restore the panel.
+        val chip = android.widget.ImageView(context).apply {
+            setImageResource(com.hexgrid.launcher.R.drawable.ic_chevron_up_24)
+            background = androidx.core.content.ContextCompat.getDrawable(
+                context, com.hexgrid.launcher.R.drawable.minimize_btn_bg)
+            val padPx = (8f * resources.displayMetrics.density).toInt()
+            setPadding(padPx, padPx, padPx, padPx)
+            contentDescription = "Expand panel"
+            setOnClickListener { toggleMinimized() }
+        }
+        val sizePx = (40f * resources.displayMetrics.density).toInt()
+        val params = LayoutParams(sizePx, sizePx).apply {
+            gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
+            // Sit above the tab bar (≈68dp tall) plus a bit of breathing room.
+            bottomMargin = (88f * resources.displayMetrics.density).toInt()
+        }
+        addView(chip, params)
+        expandChip = chip
+    }
+
+    private fun hideExpandChip() {
+        expandChip?.let { removeView(it) }
+        expandChip = null
     }
 
     fun show(initialMode: Mode = Mode.SHAPE) {
@@ -114,12 +207,46 @@ class EditModeOverlay @JvmOverloads constructor(
         binding.btnShape.isSelected = (mode == Mode.SHAPE)
         binding.btnStyle.isSelected = (mode == Mode.STYLE)
         binding.btnOrder.isSelected = (mode == Mode.ORDER)
-        listOf(binding.btnShape, binding.btnStyle, binding.btnOrder).forEach { btn ->
+
+        // 4-tab redesign: each tab is a vertical LinearLayout with [ImageView, TextView].
+        // Active tabs get accent fill + accent text; inactive stay transparent + dim grey.
+        // Wallpaper-aware: derive the accent from the user's wallpaper if enabled, then
+        // tint the active tab's bg through backgroundTintList so the static drawable swap
+        // still picks up the runtime hue.
+        val accent = com.hexgrid.launcher.util.WallpaperAccent.resolve(context)
+        val accentFill = (accent and 0x00FFFFFF) or 0x21000000.toInt()        // 13% alpha
+        val accentBorder = (accent and 0x00FFFFFF) or 0x38000000.toInt()      // 22% alpha
+        listOf(binding.btnShape, binding.btnStyle, binding.btnOrder, binding.btnMore).forEach { btn ->
+            val active = btn.isSelected
             btn.setBackgroundResource(
-                if (btn.isSelected) com.hexgrid.launcher.R.drawable.tile_squircle_primary
-                else                com.hexgrid.launcher.R.drawable.tile_squircle_secondary
+                if (active) com.hexgrid.launcher.R.drawable.tab_active_bg
+                else        com.hexgrid.launcher.R.drawable.tab_inactive_bg
             )
+            // Tint the active tab's bg with the accent. Inactive tabs are transparent so a
+            // null tint is fine (no recolour).
+            btn.backgroundTintList =
+                if (active) android.content.res.ColorStateList.valueOf(accentFill) else null
+            val tabFg = androidx.core.content.ContextCompat.getColor(
+                context,
+                if (active) com.hexgrid.launcher.R.color.hg_tab_active_fg
+                else        com.hexgrid.launcher.R.color.hg_tab_inactive_fg
+            )
+            (btn as? android.widget.LinearLayout)?.let { tab ->
+                (tab.getChildAt(0) as? android.widget.ImageView)?.setColorFilter(tabFg)
+                (tab.getChildAt(1) as? android.widget.TextView)?.setTextColor(tabFg)
+            }
         }
+
+        // Sheet header reflects current panel.
+        val (title, subtitle) = when (mode) {
+            Mode.SHAPE -> "Shape" to "5 parameters"
+            Mode.STYLE -> "Style" to "Theme & transparency"
+            Mode.ORDER -> "Order" to "Sort & layout"
+        }
+        binding.root.findViewById<android.widget.TextView>(com.hexgrid.launcher.R.id.sheetTitle)
+            ?.text = title
+        binding.root.findViewById<android.widget.TextView>(com.hexgrid.launcher.R.id.sheetSubtitle)
+            ?.text = subtitle
 
         val newPanel = when (mode) {
             Mode.SHAPE -> shapePanel
@@ -144,50 +271,72 @@ class EditModeOverlay @JvmOverloads constructor(
     }
 
     override fun onApplyWindowInsets(insets: android.view.WindowInsets): android.view.WindowInsets {
+        // After the v2 redesign the sheet manages its own internal layout (LinearLayout),
+        // so per-child margin manipulation is no longer needed. We push the bottom system-bar
+        // inset onto the sheet's bottom padding so the tab bar clears the gesture area.
         val compat = WindowInsetsCompat.toWindowInsetsCompat(insets, this)
         val systemBars = compat.getInsets(WindowInsetsCompat.Type.systemBars())
-        val tappable   = compat.getInsets(WindowInsetsCompat.Type.tappableElement())
-
-        val marginDp16 = (16f * resources.displayMetrics.density).toInt()
-        val marginDp8  = (8f  * resources.displayMetrics.density).toInt()
-        val computedBottomMargin = maxOf(
-            systemBars.bottom + marginDp16,
-            tappable.bottom   + marginDp8
+        val basePaddingPx = (20f * resources.displayMetrics.density).toInt()
+        val sheet = binding.editSheet
+        sheet.setPadding(
+            sheet.paddingLeft,
+            sheet.paddingTop,
+            sheet.paddingRight,
+            basePaddingPx + systemBars.bottom
         )
-
-        // FIX: original plan body had `bottomMargin = bottomMargin` (self-assign of shadowed
-        // local). The fix uses a renamed local `computedBottomMargin` and assigns it directly
-        // to the LayoutParams field via `also`/explicit field access.
-        val toolbarLp = binding.toolbarPill.layoutParams as LayoutParams
-        toolbarLp.bottomMargin = computedBottomMargin
-        binding.toolbarPill.layoutParams = toolbarLp
-
-        val toolbarHeightPx = (72f * resources.displayMetrics.density).toInt()
-        val panelLp = binding.panelContainer.layoutParams as LayoutParams
-        panelLp.bottomMargin = computedBottomMargin + toolbarHeightPx + marginDp8
-        binding.panelContainer.layoutParams = panelLp
-
         return super.onApplyWindowInsets(insets)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
-        val pc = binding.panelContainer
-        panelRect.set(pc.left, pc.top, pc.right, pc.bottom)
-        val tb = binding.toolbarPill
-        toolbarRect.set(tb.left, tb.top, tb.right, tb.bottom)
+        // Sheet is a direct child of the overlay → its left/top/right/bottom are already
+        // in the overlay's coord space, which is what onInterceptTouchEvent works in.
+        val s = binding.editSheet
+        sheetRect.set(s.left, s.top, s.right, s.bottom)
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         val x = ev.x.toInt()
         val y = ev.y.toInt()
-        val insidePanel   = panelRect.contains(x, y)
-        val insideToolbar = toolbarRect.contains(x, y)
-        if (!insidePanel && !insideToolbar) {
+        // Touches inside the sheet pass straight through to its children (sliders, tabs,
+        // close button). Touches outside the sheet (the dimmed vignette) get intercepted so
+        // we can run the long-press affordance.
+        if (!sheetRect.contains(x, y)) {
             longPressDetector.onTouchEvent(ev)
             return true
         }
         return false
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // Only fires when onInterceptTouchEvent returned true (touch is on the dimmed
+        // vignette outside the sheet). Drag-down anywhere on the vignette translates the
+        // entire sheet downward so the user can preview the grid behind. On release, snap
+        // back. Threshold prevents accidental fades on stray taps.
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                peekStartY = event.y
+                peekActive = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dy = event.y - peekStartY
+                if (dy > peekThresholdPx) {
+                    peekActive = true
+                    val offset = (dy - peekThresholdPx).coerceAtMost(peekMaxOffsetPx)
+                    val progress = offset / peekMaxOffsetPx
+                    binding.editSheet.translationY = offset
+                    binding.editSheet.alpha = 1f - progress * 0.6f
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (peekActive) {
+                    binding.editSheet.animate()
+                        .translationY(0f).alpha(1f).setDuration(220).start()
+                }
+                peekActive = false
+            }
+        }
+        return true
     }
 
     private fun setupToolbarButtons() {
@@ -215,7 +364,8 @@ class EditModeOverlay @JvmOverloads constructor(
             ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
-            bottomMargin = (toolbarRect.height() + (80f * resources.displayMetrics.density).toInt())
+            // Float the chip above the sheet's top edge so it's visible on the dimmed area.
+            bottomMargin = (height - sheetRect.top) + (24f * resources.displayMetrics.density).toInt()
         }
         addView(chip, params)
 

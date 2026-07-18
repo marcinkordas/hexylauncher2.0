@@ -34,7 +34,17 @@ class ShapePanel(private val context: Context) : EditPanel {
     }
 
     private fun setup(binding: PanelShapeBinding) {
-        binding.sliderHexRadius.setValueSafely(SettingsManager.getHexRadius(context))
+        // Re-tint slider tracks with the resolved accent (wallpaper-derived if enabled,
+        // otherwise the static violet brand colour). Done at attach time so changes to
+        // "use_wallpaper_accent" land next time the panel is opened.
+        val accent = com.hexgrid.launcher.util.WallpaperAccent.resolve(context)
+        val accentList = android.content.res.ColorStateList.valueOf(accent)
+        listOf(
+            binding.sliderHexRadius, binding.sliderIconSize, binding.sliderIconPadding,
+            binding.sliderOutlineWidth, binding.sliderCornerRadius
+        ).forEach { it.trackActiveTintList = accentList }
+
+        binding.sliderHexRadius.setValueSafe(SettingsManager.getHexRadius(context))
         binding.sliderHexRadius.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setHexRadius(context, value)
@@ -45,7 +55,7 @@ class ShapePanel(private val context: Context) : EditPanel {
         ViewCompat.setAccessibilityDelegate(binding.sliderHexRadius,
             sliderDelegate("Hex radius: ${SettingsManager.getHexRadius(context).toInt()}dp"))
 
-        binding.sliderIconSize.setValueSafely(SettingsManager.getIconSizeMultiplier(context))
+        binding.sliderIconSize.setValueSafe(SettingsManager.getIconSizeMultiplier(context))
         binding.sliderIconSize.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setIconSizeMultiplier(context, value)
@@ -54,7 +64,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderIconPadding.setValueSafely(SettingsManager.getIconPadding(context))
+        binding.sliderIconPadding.setValueSafe(SettingsManager.getIconPadding(context))
         binding.sliderIconPadding.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setIconPadding(context, value)
@@ -63,7 +73,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderOutlineWidth.setValueSafely(SettingsManager.getOutlineWidth(context))
+        binding.sliderOutlineWidth.setValueSafe(SettingsManager.getOutlineWidth(context))
         binding.sliderOutlineWidth.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setOutlineWidth(context, value)
@@ -72,7 +82,7 @@ class ShapePanel(private val context: Context) : EditPanel {
             }
         }
 
-        binding.sliderCornerRadius.setValueSafely(SettingsManager.getCornerRadius(context))
+        binding.sliderCornerRadius.setValueSafe(SettingsManager.getCornerRadius(context))
         binding.sliderCornerRadius.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 SettingsManager.setCornerRadius(context, value)
