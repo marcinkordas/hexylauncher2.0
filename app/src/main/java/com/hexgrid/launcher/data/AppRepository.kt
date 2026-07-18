@@ -83,6 +83,10 @@ class AppRepository(private val context: Context) {
         resolveInfos.mapNotNullTo(apps) { ri ->
             try {
                 val packageName = ri.activityInfo.packageName
+                // Filter out suspended packages (Samsung Modes, enterprise policy, parental controls).
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && packageManager.isPackageSuspended(packageName)) {
+                    return@mapNotNullTo null
+                }
                 val label = ri.loadLabel(packageManager).toString()
                 val rawIcon: Drawable = ri.loadIcon(packageManager)
                 // Apply squircle/circle mask to non-adaptive icons (WebAPKs, old apps)
@@ -126,6 +130,10 @@ class AppRepository(private val context: Context) {
 
                 shortcuts.mapNotNullTo(apps) { shortcut ->
                     try {
+                        // Filter out shortcuts whose package is suspended.
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && packageManager.isPackageSuspended(shortcut.`package`)) {
+                            return@mapNotNullTo null
+                        }
                         val rawIcon = launcherApps.getShortcutIconDrawable(shortcut, context.resources.displayMetrics.densityDpi)
                             ?: context.packageManager.getApplicationIcon(shortcut.`package`)
                         val maskedIcon = if (rawIcon !is AdaptiveIconDrawable && cornerRadiusRatio > 0f) {

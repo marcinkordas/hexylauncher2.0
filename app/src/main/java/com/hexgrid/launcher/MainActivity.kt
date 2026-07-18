@@ -106,6 +106,7 @@ class MainActivity : AppCompatActivity() {
                 binding.hexGrid.invalidate()
             }
             "dim_status_bar"      -> applyStatusBarDim()
+            "wallpaper_opacity"   -> applyWallpaperOpacity()
         }
     }
 
@@ -164,6 +165,8 @@ class MainActivity : AppCompatActivity() {
         override fun onShortcutsChanged(packageName: String, shortcuts: MutableList<ShortcutInfo>, user: UserHandle) {
             viewModel.reloadApps()
         }
+        override fun onPackagesSuspended(packageNames: Array<String>, user: UserHandle) { viewModel.reloadApps() }
+        override fun onPackagesUnsuspended(packageNames: Array<String>, user: UserHandle) { viewModel.reloadApps() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -214,7 +217,8 @@ class MainActivity : AppCompatActivity() {
                 HexGridCalculator(r, o)
             },
             containerWidth = { binding.hexGridContainer.width },
-            containerHeight = { binding.hexGridContainer.height }
+            containerHeight = { binding.hexGridContainer.height },
+            onLayoutChanged = { updateOccupiedCells() }
         )
 
         setupGrid()
@@ -229,6 +233,7 @@ class MainActivity : AppCompatActivity() {
         updateOccupiedCells()
 
         viewModel.loadApps()
+        applyWallpaperOpacity()
 
         // Handle placement intent if launched for widget placement
         handlePlacementIntent(intent)
@@ -554,6 +559,13 @@ class MainActivity : AppCompatActivity() {
         controller.isAppearanceLightStatusBars = !dim
     }
 
+    /** Dims the wallpaper behind the grid per the wallpaper_opacity setting (0-100). */
+    private fun applyWallpaperOpacity() {
+        val opacity = SettingsManager.getWallpaperOpacity(this).coerceIn(0, 100)
+        val scrimAlpha = ((100 - opacity) * 2.55f).toInt().coerceIn(0, 255)
+        binding.hexGridContainer.setBackgroundColor(android.graphics.Color.argb(scrimAlpha, 0, 0, 0))
+    }
+
     fun enterEditMode() {
         if (editModeOverlay != null) return
 
@@ -568,6 +580,7 @@ class MainActivity : AppCompatActivity() {
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT
         )
+        overlay.elevation = 16f * resources.displayMetrics.density
         binding.hexGridContainer.addView(overlay, params)
         editModeOverlay = overlay
 

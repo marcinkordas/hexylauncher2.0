@@ -9,6 +9,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
@@ -128,6 +129,47 @@ class HexagonalGridView @JvmOverloads constructor(
     }
 
     private val gestureDetector = GestureDetector(context, GestureListener())
+
+    // Pinch-to-zoom: scaleFactor < 1 = pinch in (smaller hex_radius, more icons fit);
+    // scaleFactor > 1 = spread (larger). Mid-gesture we mutate hexRadius locally + recompute
+    // for instant feedback; we only persist the final value via SettingsManager on onScaleEnd
+    // so the prefs listener doesn't fire 60×/sec during the pinch.
+    private var pinchStartRadius = hexRadius
+    private val scaleDetector = ScaleGestureDetector(context,
+        object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                pinchStartRadius = hexRadius
+                return true
+            }
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val newRadius = (pinchStartRadius * detector.scaleFactor)
+                    .coerceIn(SettingsManager.MIN_HEX_RADIUS, SettingsManager.MAX_HEX_RADIUS)
+                if (newRadius != hexRadius) applyHexRadiusInteractive(newRadius)
+                return true
+            }
+            override fun onScaleEnd(detector: ScaleGestureDetector) {
+                SettingsManager.setHexRadius(context, hexRadius)
+            }
+        })
+
+    /**
+     * Mid-pinch update: mutate hexRadius and recompute everything that depends on it
+     * (calculator, text size, hex paths, spiral positions, scroll bounds) without going
+     * through SharedPreferences. Avoids prefs-listener feedback loops at 60fps.
+     */
+    private fun applyHexRadiusInteractive(newRadius: Float) {
+        hexRadius = newRadius
+        val orientation = when (SettingsManager.getHexOrientation(context)) {
+            SettingsManager.HexOrientation.POINTY_TOP -> HexGridCalculator.Orientation.POINTY_TOP
+            SettingsManager.HexOrientation.FLAT_TOP   -> HexGridCalculator.Orientation.FLAT_TOP
+        }
+        calculator = HexGridCalculator(hexRadius, orientation)
+        textPaint.textSize = hexRadius * 0.16f
+        precomputeHexPaths()
+        hexPositions = calculator.generateSpiralCoordinates(maxOf(25, (apps.size / 6) + 5), occupiedCells)
+        updateScrollBounds()
+        invalidate()
+    }
     
     init {
         setLayerType(LAYER_TYPE_HARDWARE, null)
@@ -541,6 +583,10 @@ class HexagonalGridView @JvmOverloads constructor(
             scroller.forceFinished(true)
             centerAnimator?.cancel()
         }
+        scaleDetector.onTouchEvent(event)
+        // Suppress single-finger gestures while a 2-finger pinch is active so the user
+        // doesn't accidentally trigger scroll/long-press during the zoom.
+        if (scaleDetector.isInProgress) return true
         return gestureDetector.onTouchEvent(event) || super.onTouchEvent(event)
     }
     

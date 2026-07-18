@@ -21,7 +21,16 @@ class WidgetHost(context: Context) : AppWidgetHost(context.applicationContext, H
         context: Context,
         appWidgetId: Int,
         info: AppWidgetProviderInfo
-    ): AppWidgetHostView = createView(context, appWidgetId, info)
+    ): AppWidgetHostView =
+        // MUST use applicationContext, NOT an AppCompatActivity context.
+        // AppCompatActivity.installViewFactory() puts an AppCompat factory on the activity's
+        // LayoutInflater that substitutes ImageView → AppCompatImageView (and ImageButton →
+        // AppCompatImageButton). RemoteViews.apply() calls cloneInContext() which copies that
+        // factory; RemoteViews then tries to call methods like setImageResource(int) which are
+        // whitelisted ONLY for the exact ImageView class (not AppCompatImageView) → throws
+        // RemoteViews$ActionException → AppWidgetHostView falls back to "Couldn't add widget.".
+        // The Application context has no such factory, so RemoteViews inflate cleanly.
+        createView(context.applicationContext, appWidgetId, info)
 
     fun releaseId(appWidgetId: Int) = deleteAppWidgetId(appWidgetId)
 }
