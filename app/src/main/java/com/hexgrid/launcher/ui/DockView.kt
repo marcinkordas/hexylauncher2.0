@@ -61,6 +61,9 @@ class DockView @JvmOverloads constructor(
     private lateinit var searchEditText: EditText
     private lateinit var micIcon: ImageView
     private lateinit var searchCloseIcon: ImageView
+    // Invisible right-side counterweight so pinned apps stay centered in the pill
+    // now that Settings no longer occupies the right slot (it moved to the corner).
+    private lateinit var rightSpacer: View
 
     // State
     private var isSearchMode = false
@@ -217,8 +220,15 @@ class DockView @JvmOverloads constructor(
             setOnClickListener { exitSearchMode() }
         }
 
+        // Counterweight mirroring the search icon (40dp + 8dp margin) so the apps
+        // strip is centered on the pill's true centre.
+        rightSpacer = View(context).apply {
+            layoutParams = LayoutParams(dpToPx(40), dpToPx(40)).apply { marginStart = dpToPx(8) }
+        }
+
         pill.addView(searchIcon)
         pill.addView(appsScrollView)
+        pill.addView(rightSpacer)
         pill.addView(searchEditText)
         pill.addView(micIcon)
         pill.addView(searchCloseIcon)
@@ -408,6 +418,7 @@ class DockView @JvmOverloads constructor(
         searchIcon.setColorFilter(themeColor(com.google.android.material.R.attr.colorPrimary))
 
         cancelAnims()
+        rightSpacer.visibility = View.GONE
 
         // Apps fade-through OUT (fade + scale down), no cross-slide.
         appsScrollView.animate()
@@ -453,6 +464,7 @@ class DockView @JvmOverloads constructor(
         fadeScaleOut(micIcon)
         fadeScaleOut(searchCloseIcon)
 
+        rightSpacer.visibility = View.VISIBLE
         appsScrollView.visibility = View.VISIBLE
         appsScrollView.alpha = 0f
         appsScrollView.scaleX = 0.92f; appsScrollView.scaleY = 0.92f

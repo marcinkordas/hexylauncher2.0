@@ -92,18 +92,24 @@ class SettingsHubActivity : AppCompatActivity() {
         }
 
         binding.tileDefaultLauncher.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val roleManager = getSystemService(RoleManager::class.java)
-                if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
-                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
-                    @Suppress("DEPRECATION")
-                    startActivityForResult(intent, REQUEST_CODE_DEFAULT_LAUNCHER)
-                }
-            } else {
+            // The system "Default home app" settings screen is the reliable path across
+            // OEMs — Samsung/One UI often shows nothing for the ROLE_HOME request dialog.
+            // Try it first; fall back to the role request, then to all-settings.
+            val opened = try {
+                startActivity(Intent(Settings.ACTION_HOME_SETTINGS)); true
+            } catch (_: Exception) { false }
+            if (!opened && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 try {
-                    startActivity(Intent(Settings.ACTION_HOME_SETTINGS))
+                    val roleManager = getSystemService(RoleManager::class.java)
+                    if (roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                        @Suppress("DEPRECATION")
+                        startActivityForResult(
+                            roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME),
+                            REQUEST_CODE_DEFAULT_LAUNCHER
+                        )
+                    }
                 } catch (_: Exception) {
-                    startActivity(Intent(Settings.ACTION_SETTINGS))
+                    try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Exception) {}
                 }
             }
         }
